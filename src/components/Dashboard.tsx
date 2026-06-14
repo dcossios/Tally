@@ -1,6 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, ChevronsUpDown, Inbox } from "lucide-react";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { formatMoney } from "@/lib/format";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type DashboardData = {
   incomeMinor: number;
@@ -12,15 +13,16 @@ type DashboardData = {
 
 const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
-function splitMoney(value: string) {
-  const match = value.match(/^[^\d]*/);
-  const prefix = match ? match[0] : "";
-  return { prefix, rest: value.slice(prefix.length) };
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function Money({ value, className }: { value: string; className?: string }) {
-  const { prefix, rest } = splitMoney(value);
-  return <span className={className}><span className="sign">{prefix}</span>{rest}</span>;
+function monthLabel(date: Date) {
+  return capitalize(new Intl.DateTimeFormat("es-CO", { month: "long", year: "numeric" }).format(date));
+}
+
+function monthName(date: Date) {
+  return new Intl.DateTimeFormat("es-CO", { month: "long" }).format(date);
 }
 
 function weekdayIndex(timestamp: number) {
@@ -28,10 +30,14 @@ function weekdayIndex(timestamp: number) {
   return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(name);
 }
 
-export function Dashboard({ data, onReview, onTransactions }: { data: DashboardData | undefined; name: string; onReview: () => void; onTransactions: () => void }) {
+export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransactions }: { data: DashboardData | undefined; name: string; monthDate: Date; onSelectMonth: (date: Date) => void; onReview: () => void; onTransactions: () => void }) {
   const income = data?.incomeMinor ?? 0;
   const expense = data?.expenseMinor ?? 0;
+  const balance = data?.balanceMinor ?? 0;
   const recent = data?.recent ?? [];
+
+  const now = new Date();
+  const monthOptions = Array.from({ length: 12 }, (_, index) => new Date(now.getFullYear(), now.getMonth() - index, 1));
 
   const dailyExpense = new Array(7).fill(0) as number[];
   for (const tx of recent) {
@@ -46,22 +52,29 @@ export function Dashboard({ data, onReview, onTransactions }: { data: DashboardD
     <div className="screen insights-screen">
       <header className="insights-header">
         <h1>Resumen</h1>
-        <button className="period-pill" type="button">Mes <ChevronsUpDown /></button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="period-pill" type="button">{monthLabel(monthDate)} <ChevronsUpDown /></button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="month-menu">
+            {monthOptions.map((option) => (
+              <DropdownMenuItem key={option.toISOString()} onSelect={() => onSelectMonth(option)}>
+                {monthLabel(option)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
 
-      <section className="insights-stats">
-        <div>
-          <div className="stat-label">Junio 2026</div>
-          <Money className="stat-value" value={formatMoney(data?.balanceMinor ?? 0, "COP", (data?.balanceMinor ?? 0) >= 0 ? "positive" : "negative")} />
-        </div>
-        <div>
-          <div className="stat-label">Ingreso/día</div>
-          <Money className="stat-value" value={formatMoney(Math.round(income / 30))} />
-        </div>
+      <section className="hero-card">
+        <span className="hero-label">Balance de {monthName(monthDate)}</span>
+        <strong className="hero-amount" data-sign={balance >= 0 ? "pos" : "neg"}>
+          {formatMoney(balance, "COP", balance >= 0 ? "positive" : "negative")}
+        </strong>
       </section>
 
       <section className="insights-cards">
-        <button className="insight-card" data-active="true" type="button" onClick={onTransactions}>
+        <button className="insight-card" type="button" onClick={onTransactions}>
           <span className="card-icon income"><ArrowUpRight /></span>
           <span><small>Ingresos</small><strong>{formatMoney(income)}</strong></span>
         </button>
@@ -71,30 +84,29 @@ export function Dashboard({ data, onReview, onTransactions }: { data: DashboardD
         </button>
       </section>
 
-      <section className="bar-chart">
-        <div className="bar-chart-grid">
-          <div className="bar-chart-axis"><span>{Math.round(maxBar / 100).toLocaleString("es-CO")}</span><span>0</span></div>
-          <div className="bar-chart-bars">
-            {dailyExpense.map((value, index) => (
-              <div className="bar" data-kind="expense" key={index}>
-                <span className="fill" style={{ height: `${hasEntries ? Math.max((value / maxBar) * 100, value > 0 ? 4 : 0) : 0}%` }} />
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="bar-chart-labels">{DAY_LABELS.map((label, index) => <span key={index}>{label}</span>)}</div>
-      </section>
-
       {(data?.pendingCount ?? 0) > 0 ? (
-        <button className="insight-card" style={{ marginTop: 22, width: "100%" }} type="button" onClick={onReview}>
+        <button className="review-banner" type="button" onClick={onReview}>
           <span className="card-icon expense">⚠️</span>
           <span><small>Por revisar</small><strong>{data?.pendingCount} movimiento(s)</strong></span>
+          <span className="chevron">›</span>
         </button>
       ) : null}
 
-      {!hasEntries ? (
-        <div className="insights-empty"><Inbox /><p>No hay movimientos.</p></div>
-      ) : null}
+      {hasEntries ? (
+        <section className="chart-card">
+          <span className="chart-title">Gastos por día</span>
+          <div className="bar-chart-bars">
+            {dailyExpense.map((value, index) => (
+              <div className="bar" data-kind="expense" key={index}>
+                <span className="fill" style={{ height: `${Math.max((value / maxBar) * 100, value > 0 ? 6 : 0)}%` }} />
+              </div>
+            ))}
+          </div>
+          <div className="bar-chart-labels">{DAY_LABELS.map((label, index) => <span key={index}>{label}</span>)}</div>
+        </section>
+      ) : (
+        <div className="insights-empty"><Inbox /><p>No hay movimientos en {monthName(monthDate)}.</p></div>
+      )}
     </div>
   );
 }

@@ -62,6 +62,14 @@ export function TransactionDialog({ open, onOpenChange, transaction }: { open: b
 
   const meta = metaDateLabel(occurredAt);
 
+  const handleDelete = () => {
+    if (!transaction) return;
+    if (!window.confirm("¿Eliminar este movimiento? Esta acción no se puede deshacer.")) return;
+    void remove({ id: transaction._id })
+      .then(() => { toast.success("Movimiento eliminado."); onOpenChange(false); })
+      .catch((error: Error) => toast.error(error.message));
+  };
+
   const submit = () => {
     const value = parseFloat(raw || "0");
     if (!value || value <= 0) { toast.error("Ingresa un monto."); return; }
@@ -100,7 +108,7 @@ export function TransactionDialog({ open, onOpenChange, transaction }: { open: b
               <button type="button" data-state={type === "income" ? "on" : "off"} onClick={() => { setType("income"); setCategoryId(undefined); setCategoryName(undefined); }}>Ingreso</button>
             </div>
             {transaction ? (
-              <button className="calc-round-btn" type="button" aria-label="Eliminar" onClick={() => void remove({ id: transaction._id }).then(() => { toast.success("Movimiento eliminado."); onOpenChange(false); })}><Trash2 /></button>
+              <button className="calc-round-btn danger" type="button" aria-label="Eliminar" onClick={handleDelete}><Trash2 /></button>
             ) : (
               <button className="calc-round-btn" type="button" aria-label="Cambiar tipo" onClick={() => { setType((current) => current === "expense" ? "income" : "expense"); setCategoryId(undefined); setCategoryName(undefined); }}><Repeat /></button>
             )}
@@ -150,6 +158,10 @@ export function TransactionDialog({ open, onOpenChange, transaction }: { open: b
               <LayoutGrid /> {categoryName ?? "Categoría"}
             </button>
           </div>
+
+          {transaction ? (
+            <button className="calc-delete" type="button" onClick={handleDelete}><Trash2 /> Eliminar movimiento</button>
+          ) : null}
 
           <div className="keypad">
             {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((key) => (

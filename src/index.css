@@ -51,30 +51,46 @@
   .insights-header h1 { font-size: 2.3rem; font-weight: 800; letter-spacing: -.02em; }
   .period-pill { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 14px; color: #f2f2f7; background: #1c1c1e; border-radius: 12px; font-weight: 600; }
   .period-pill svg { width: 16px; color: #8e8e93; }
+  .month-menu { max-height: 320px; overflow-y: auto; min-width: 180px; }
+  .month-menu [role="menuitem"] { padding: 10px 12px; font-size: .95rem; }
   .insights-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 26px; }
   .insights-stats > div:last-child { text-align: right; }
   .stat-label { color: #8e8e93; font-size: .82rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
   .stat-value { display: block; margin-top: 4px; font-size: clamp(1.35rem, 6vw, 1.85rem); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; white-space: nowrap; }
   .stat-value .sign { color: #8e8e93; }
   .insights-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
-  .insight-card { min-width: 0; display: flex; align-items: center; gap: 12px; padding: 14px; background: #1c1c1e; border: 1px solid transparent; border-radius: 16px; text-align: left; }
+  .insight-card { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; background: #1c1c1e; border: 1px solid transparent; border-radius: 16px; text-align: left; }
   .insight-card[data-active="true"] { border-color: #48484a; background: #242426; }
-  .insight-card .card-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 auto; border-radius: 11px; }
-  .insight-card .card-icon svg { width: 21px; color: #fff; }
+  .insight-card .card-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 auto; border-radius: 11px; }
+  .insight-card .card-icon svg { width: 20px; color: #fff; }
   .insight-card .card-icon.income { background: #1f7a4d; }
   .insight-card .card-icon.expense { background: #b3322b; }
-  .insight-card span { display: flex; flex-direction: column; min-width: 0; }
-  .insight-card small { color: #8e8e93; font-size: .82rem; }
-  .insight-card strong { font-size: 1.15rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .insight-card > span { display: flex; flex-direction: column; gap: 2px; width: 100%; min-width: 0; }
+  .insight-card small { color: #8e8e93; font-size: .85rem; }
+  .insight-card strong { font-size: 1.3rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .bar-chart { margin-top: 26px; }
-  .bar-chart-grid { position: relative; display: grid; grid-template-columns: 18px 1fr; gap: 10px; height: 320px; }
-  .bar-chart-axis { display: flex; flex-direction: column; justify-content: space-between; color: #636366; font-size: .78rem; }
-  .bar-chart-bars { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; align-items: stretch; }
-  .bar-chart-bars .bar { position: relative; width: 100%; height: 100%; background: #1c1c1e; border-radius: 8px; }
+  /* Balance hero card */
+  .hero-card { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; padding: 22px; background: #1c1c1e; border-radius: 20px; }
+  .hero-label { color: #8e8e93; font-size: .95rem; font-weight: 600; }
+  .hero-amount { font-size: clamp(2.2rem, 11vw, 3rem); font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .hero-amount[data-sign="pos"] { color: #34c759; }
+  .hero-amount[data-sign="neg"] { color: #ff453a; }
+
+  /* Pending review banner */
+  .review-banner { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 14px; padding: 14px; background: rgba(255,69,58,.1); border: 1px solid rgba(255,69,58,.25); border-radius: 16px; text-align: left; }
+  .review-banner span:nth-child(2) { display: flex; flex-direction: column; min-width: 0; }
+  .review-banner small { color: #ff8a80; font-size: .82rem; }
+  .review-banner strong { font-weight: 600; }
+  .review-banner .chevron { margin-left: auto; color: #8e8e93; font-size: 1.5rem; }
+
+  /* Daily expenses chart card */
+  .chart-card { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; padding: 20px 18px 16px; background: #1c1c1e; border-radius: 20px; }
+  .chart-title { color: #8e8e93; font-size: .95rem; font-weight: 600; }
+  .bar-chart-bars { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; align-items: stretch; height: 150px; }
+  .bar-chart-bars .bar { position: relative; width: 100%; height: 100%; background: #2c2c2e; border-radius: 8px; }
   .bar-chart-bars .bar .fill { position: absolute; inset: auto 0 0 0; border-radius: 8px; background: #34c759; }
   .bar-chart-bars .bar[data-kind="expense"] .fill { background: #ff453a; }
-  .bar-chart-labels { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; margin: 10px 0 0 28px; color: #8e8e93; font-size: .8rem; font-weight: 600; text-align: center; }
+  .bar-chart-labels { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; color: #8e8e93; font-size: .8rem; font-weight: 600; text-align: center; }
 
   .insights-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 48px 0 0; color: #8e8e93; }
   .insights-empty svg { width: 40px; height: 40px; color: #5a5a5e; }
@@ -128,6 +144,9 @@
   .calc-topbar { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 8px; }
   .calc-round-btn { display: grid; place-items: center; width: 40px; height: 40px; color: #9a9a9e; background: #1c1c1e; border-radius: 50%; }
   .calc-round-btn svg { width: 18px; }
+  .calc-round-btn.danger { color: #ff453a; }
+  .calc-delete { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; margin-bottom: 10px; color: #ff453a; background: rgba(255,69,58,.1); border-radius: 13px; font-weight: 600; }
+  .calc-delete svg { width: 18px; }
   .seg-toggle { justify-self: center; display: inline-flex; padding: 4px; background: rgba(28,28,30,.6); border: 1px solid #2c2c2e; border-radius: 99px; }
   .seg-toggle button { min-height: 38px; padding: 0 22px; color: #8e8e93; border-radius: 99px; font-size: 1.05rem; font-weight: 600; }
   .seg-toggle button[data-state="on"] { color: #fff; background: #2c2c2e; }
