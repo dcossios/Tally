@@ -29,7 +29,7 @@ export function SettingsScreen() {
   };
 
   return (
-    <div className="screen standard-screen settings-screen">
+    <div className="screen settings-screen">
       <header className="screen-header"><p>Automatización y cuenta</p><h1>Ajustes</h1></header>
       <section className="settings-section">
         <div className="settings-title"><Smartphone /><div><h2>Shortcut de Messages</h2><p>Configura una automatización para cada remitente.</p></div></div>

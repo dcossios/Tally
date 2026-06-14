@@ -19,7 +19,7 @@ export function ReviewScreen({ onBack }: { onBack: () => void }) {
   const amountCopMinor = useMemo(() => copValue ? Math.round(Number(copValue.replace(/\D/g, "")) * 100) : undefined, [copValue]);
 
   if (!item || !transaction) {
-    return <div className="screen standard-screen review-empty"><div className="success-ring">✓</div><h1>Todo está al día</h1><p>No tienes movimientos pendientes por revisar.</p></div>;
+    return <div className="screen review-screen empty-state"><span className="emoji">🙌</span><h3>Todo al día</h3><p>No tienes movimientos por revisar.</p></div>;
   }
 
   const confirm = async () => {
