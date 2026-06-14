@@ -15,6 +15,7 @@ import type * as imports from "../imports.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_smsParser from "../lib/smsParser.js";
+import type * as shared from "../shared.js";
 import type * as shortcutTokens from "../shortcutTokens.js";
 import type * as transactions from "../transactions.js";
 import type * as users from "../users.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/hash": typeof lib_hash;
   "lib/smsParser": typeof lib_smsParser;
+  shared: typeof shared;
   shortcutTokens: typeof shortcutTokens;
   transactions: typeof transactions;
   users: typeof users;

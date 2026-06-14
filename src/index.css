@@ -264,6 +264,98 @@
   /* shadcn dialog (non-calculator) */
   .movement-form { display: flex; flex-direction: column; gap: 16px; }
   .movement-form label { display: flex; flex-direction: column; gap: 7px; font-size: .88rem; font-weight: 600; }
+
+  /* ---------- Finanzas compartidas ---------- */
+  .home-tabs { display: flex; gap: 6px; width: min(100%, 480px); margin: 0 auto; padding: calc(14px + env(safe-area-inset-top)) 22px 0; }
+  .home-tabs button { flex: 1; min-height: 40px; color: #8e8e93; background: #1c1c1e; border: 1px solid transparent; border-radius: 12px; font-weight: 600; }
+  .home-tabs button[data-active="true"] { color: #000; background: #f2f2f7; }
+  /* El header de la pantalla reduce su padding superior cuando hay tabs encima */
+  .home-tabs + .insights-screen { padding-top: 16px; }
+
+  .calc-mode-title { justify-self: center; font-size: 1.05rem; font-weight: 700; }
+
+  /* Onboarding */
+  .shared-onboarding { display: flex; flex-direction: column; gap: 22px; padding: 16px 22px 28px; }
+  .shared-onboarding-hero { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 0 0; text-align: center; }
+  .shared-onboarding-hero h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; }
+  .shared-onboarding-hero p { max-width: 360px; color: #8e8e93; line-height: 1.5; }
+
+  /* Vista previa de los dos bolsillos */
+  .pocket-preview { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+  .pocket-preview-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 18px; background: #1c1c1e; border: 1px solid #2c2c2e; border-radius: 18px; }
+  .pocket-preview-card strong { font-size: 1.1rem; font-weight: 700; }
+  .pocket-preview-card small { color: #8e8e93; font-size: .9rem; }
+  .pocket-preview-card .pocket-icon { margin-bottom: 4px; }
+  .pocket-preview-arrow { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 2px 0; color: #8e8e93; font-size: .82rem; font-weight: 600; }
+  .pocket-preview-arrow svg { width: 18px; color: #9a7fd6; }
+  .shared-onboarding-actions { display: flex; flex-direction: column; gap: 12px; }
+  .shared-choice { display: flex; align-items: center; gap: 14px; padding: 18px; background: #1c1c1e; border: 1px solid #2c2c2e; border-radius: 18px; text-align: left; }
+  .shared-choice-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 auto; color: #fff; background: #2c2c2e; border-radius: 13px; }
+  .shared-choice-icon svg { width: 22px; }
+  .shared-choice span:last-child { display: flex; flex-direction: column; gap: 3px; }
+  .shared-choice strong { font-size: 1.08rem; font-weight: 600; }
+  .shared-choice small { color: #8e8e93; font-size: .9rem; line-height: 1.4; }
+  .shared-onboarding-form { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
+  .shared-onboarding-form label { display: flex; flex-direction: column; gap: 8px; font-size: .88rem; font-weight: 600; }
+  .shared-onboarding-form .text-action { align-self: center; }
+
+  /* Invite banner */
+  .invite-banner { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 16px; background: rgba(154,127,214,.12); border: 1px solid rgba(154,127,214,.3); border-radius: 16px; }
+  .invite-banner-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .invite-banner-text strong { font-weight: 600; }
+  .invite-banner-text small { color: #b7a4e0; font-size: .85rem; line-height: 1.3; }
+  .invite-code { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; padding: 8px 12px; color: #fff; background: #2c2c2e; border-radius: 11px; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
+  .invite-code svg { width: 16px; color: #c7c7cc; }
+  .invite-generate { margin-left: auto; padding: 10px 14px; color: #000; background: #f2f2f7; border-radius: 11px; font-weight: 600; white-space: nowrap; }
+
+  /* Pocket icons (compartidos) */
+  .pocket-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; }
+  .pocket-icon svg { width: 20px; color: #fff; }
+  .pocket-icon.common { background: #5a8fd6; }
+  .pocket-icon.savings { background: #9a7fd6; }
+
+  /* Dos bolsillos apilados con el flujo común -> ahorro */
+  .pocket-stack { display: flex; flex-direction: column; gap: 6px; margin-top: 22px; }
+
+  .pocket-hero { display: flex; flex-direction: column; gap: 6px; padding: 20px; background: #1c1c1e; border-radius: 20px; }
+  .pocket-hero-top { display: flex; align-items: center; gap: 10px; }
+  .pocket-hero-label { color: #c7c7cc; font-size: .95rem; font-weight: 600; }
+  .pocket-hero-amount { font-size: clamp(2rem, 10vw, 2.7rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
+  .pocket-hero-amount[data-sign="pos"] { color: #f2f2f7; }
+  .pocket-hero-amount[data-sign="neg"] { color: #ff453a; }
+  .pocket-sub { margin-top: 8px; color: #8e8e93; font-size: .78rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+  .pocket-members { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pocket-member { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px; background: #2c2c2e; border-radius: 13px; }
+  .member-avatar { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto; color: #fff; background: #48484a; border-radius: 50%; font-weight: 700; }
+  .pocket-member div { display: flex; flex-direction: column; min-width: 0; }
+  .pocket-member small { color: #8e8e93; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pocket-member b { font-size: 1.02rem; font-weight: 700; }
+  .pocket-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .pocket-buttons button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 48px; border-radius: 14px; font-weight: 600; }
+  .pocket-buttons button svg { width: 18px; }
+  .pb-primary { color: #000; background: #f2f2f7; }
+  .pb-secondary { color: #f2f2f7; background: #2c2c2e; }
+
+  .pocket-flow { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 0; color: #8e8e93; font-size: .82rem; font-weight: 600; }
+  .pocket-flow svg { width: 18px; color: #9a7fd6; }
+
+  .pocket-mini { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: #1c1c1e; border-radius: 18px; }
+  .pocket-mini-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .pocket-mini-main small { color: #8e8e93; font-size: .85rem; }
+  .pocket-mini-main strong { font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; color: #34c759; }
+  .pocket-mini-action { padding: 9px 16px; color: #f2f2f7; background: #2c2c2e; border-radius: 11px; font-weight: 600; }
+
+  /* Cerrar mes */
+  .close-month-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 54px; margin-top: 14px; padding: 0 16px; color: #fff; background: linear-gradient(135deg, #6f57b5, #9a7fd6); border-radius: 16px; font-weight: 700; font-size: 1rem; }
+  .close-month-btn svg { width: 19px; }
+  .close-month-btn:disabled { color: #8e8e93; background: #1c1c1e; }
+  .closed-chip { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 54px; margin-top: 14px; color: #34c759; background: rgba(52,199,89,.12); border: 1px solid rgba(52,199,89,.3); border-radius: 16px; font-weight: 700; }
+  .closed-chip svg { width: 19px; }
+
+  /* Movements list */
+  .shared-list { display: flex; flex-direction: column; margin-top: 24px; }
+  .shared-list .chart-title { margin-bottom: 4px; }
+  .shared-row { cursor: default; }
 }
 
 @media (min-width: 540px) {

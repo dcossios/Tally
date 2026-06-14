@@ -45,3 +45,7 @@ export function toDateInput(timestamp: number) {
 export function dateInputToBogota(value: string) {
   return Date.parse(`${value}T12:00:00-05:00`);
 }
+
+export function periodOf(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}

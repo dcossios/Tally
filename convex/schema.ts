@@ -76,4 +76,61 @@ export default defineSchema({
   })
     .index("by_tokenHash", ["tokenHash"])
     .index("by_userId_and_createdAt", ["userId", "createdAt"]),
+
+  // ---------- Finanzas compartidas (bolsillo común) ----------
+  sharedSpaces: defineTable({
+    name: v.string(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }),
+  sharedMemberships: defineTable({
+    spaceId: v.id("sharedSpaces"),
+    userId: v.id("users"),
+    role: v.union(v.literal("owner"), v.literal("member")),
+    joinedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_spaceId", ["spaceId"]),
+  sharedInvites: defineTable({
+    spaceId: v.id("sharedSpaces"),
+    code: v.string(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    redeemedBy: v.optional(v.id("users")),
+    redeemedAt: v.optional(v.number()),
+  })
+    .index("by_code", ["code"])
+    .index("by_spaceId", ["spaceId"]),
+  sharedEntries: defineTable({
+    spaceId: v.id("sharedSpaces"),
+    kind: v.union(
+      v.literal("contribution"),
+      v.literal("expense"),
+      v.literal("rollover"),
+      v.literal("savingsExpense"),
+    ),
+    commonDeltaMinor: v.number(),
+    savingsDeltaMinor: v.number(),
+    amountMinor: v.number(),
+    memberId: v.optional(v.id("users")),
+    linkedTransactionId: v.optional(v.id("transactions")),
+    merchant: v.optional(v.string()),
+    categoryName: v.optional(v.string()),
+    note: v.optional(v.string()),
+    period: v.string(),
+    occurredAt: v.number(),
+    createdBy: v.id("users"),
+  })
+    .index("by_spaceId_and_occurredAt", ["spaceId", "occurredAt"])
+    .index("by_spaceId_and_period", ["spaceId", "period"])
+    .index("by_spaceId_and_kind_and_period", ["spaceId", "kind", "period"]),
+  sharedMonthClosures: defineTable({
+    spaceId: v.id("sharedSpaces"),
+    period: v.string(),
+    movedToSavingsMinor: v.number(),
+    rolloverEntryId: v.optional(v.id("sharedEntries")),
+    closedBy: v.id("users"),
+    closedAt: v.number(),
+  }).index("by_spaceId_and_period", ["spaceId", "period"]),
 });

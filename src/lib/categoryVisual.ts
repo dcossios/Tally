@@ -8,6 +8,7 @@ const MAP: Record<string, CategoryVisual> = {
   Transporte: { emoji: "🚝", bg: "#e08d6f" },
   Nómina: { emoji: "💼", bg: "#5fae7e" },
   "Otros ingresos": { emoji: "🤑", bg: "#4fae9e" },
+  "Bolsillo común": { emoji: "👫", bg: "#9a7fd6" },
 };
 
 const FALLBACK: Record<"expense" | "income", CategoryVisual> = {

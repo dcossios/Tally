@@ -5,6 +5,7 @@ import { api } from "../convex/_generated/api";
 import { AuthScreen } from "@/components/AuthScreen";
 import { BottomNav, type Screen } from "@/components/BottomNav";
 import { Dashboard } from "@/components/Dashboard";
+import { SharedScreen } from "@/components/SharedScreen";
 import { TransactionsScreen } from "@/components/TransactionsScreen";
 import { ReviewScreen } from "@/components/ReviewScreen";
 import { SettingsScreen } from "@/components/SettingsScreen";
@@ -25,8 +26,11 @@ function monthRange(date: Date) {
   return { monthStart, monthEnd };
 }
 
+type HomeTab = "personal" | "shared";
+
 function SaldoApp() {
   const [screen, setScreen] = useState<Screen>("home");
+  const [homeTab, setHomeTab] = useState<HomeTab>("personal");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [monthDate, setMonthDate] = useState(() => new Date());
   const viewer = useQuery(api.users.viewer);
@@ -40,7 +44,17 @@ function SaldoApp() {
   return (
     <div className="app-shell">
       <main className="app-content">
-        {screen === "home" ? <Dashboard data={dashboard} name={viewer?.name ?? "David"} monthDate={monthDate} onSelectMonth={setMonthDate} onReview={() => setScreen("review")} onTransactions={() => setScreen("transactions")} /> : null}
+        {screen === "home" ? (
+          <>
+            <div className="home-tabs">
+              <button type="button" data-active={homeTab === "personal"} onClick={() => setHomeTab("personal")}>Personal</button>
+              <button type="button" data-active={homeTab === "shared"} onClick={() => setHomeTab("shared")}>Juntos</button>
+            </div>
+            {homeTab === "personal"
+              ? <Dashboard data={dashboard} name={viewer?.name ?? "David"} monthDate={monthDate} onSelectMonth={setMonthDate} onReview={() => setScreen("review")} onTransactions={() => setScreen("transactions")} />
+              : <SharedScreen monthDate={monthDate} onSelectMonth={setMonthDate} />}
+          </>
+        ) : null}
         {screen === "transactions" ? <TransactionsScreen /> : null}
         {screen === "review" ? <ReviewScreen onBack={() => setScreen("home")} /> : null}
         {screen === "settings" ? <SettingsScreen /> : null}
