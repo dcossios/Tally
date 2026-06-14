@@ -114,6 +114,26 @@ export function parseBancolombiaSms(message: string): ParsedSms {
     };
   }
 
+  const brebTransfer = normalized.match(
+    /(?:[A-Z]+,\s+)?transferiste\s+\$([\d.,]+)\s+a\s+la\s+llave\s+([^\s]+)\s+desde\s+tu\s+cuenta\s+(\*\d+)\s+a\s+(.+?)\s+el\s+/i,
+  );
+  if (brebTransfer) {
+    const amountMinor = parseMoneyToMinor(brebTransfer[1], "COP");
+    return {
+      matched: true,
+      rule: "transfer",
+      type: "expense",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor,
+      amountCopMinor: amountMinor,
+      merchant: brebTransfer[4].trim(),
+      categoryName: "Transferencias",
+      occurredAt,
+      accountLabel: `Cuenta ${brebTransfer[3]} · Llave ${brebTransfer[2]}`,
+    };
+  }
+
   const usdPurchase = normalized.match(
     /Compraste\s+USD\s?([\d.,]+)\s+en\s+(.+?),\s+el\s+/i,
   );

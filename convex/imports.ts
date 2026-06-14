@@ -97,6 +97,7 @@ export const review = mutation({
     importId: v.id("smsImports"),
     action: v.union(v.literal("confirm"), v.literal("discard")),
     type: v.optional(v.union(v.literal("expense"), v.literal("income"))),
+    amountMinor: v.optional(v.number()),
     amountCopMinor: v.optional(v.number()),
     merchant: v.optional(v.string()),
     categoryName: v.optional(v.string()),
@@ -118,9 +119,13 @@ export const review = mutation({
     if (transaction.currency === "USD" && args.amountCopMinor === undefined) {
       throw new Error("Ingresa el equivalente real en COP.");
     }
+    if (args.amountMinor !== undefined && args.amountMinor <= 0) {
+      throw new Error("Ingresa un monto válido.");
+    }
     await ctx.db.patch("transactions", transaction._id, {
       status: "confirmed",
       type: args.type ?? transaction.type,
+      amountMinor: args.amountMinor ?? transaction.amountMinor,
       amountCopMinor: args.amountCopMinor ?? transaction.amountCopMinor,
       merchant: args.merchant?.trim() || transaction.merchant,
       categoryName: args.categoryName?.trim() || transaction.categoryName,

@@ -197,6 +197,7 @@
   .cop-input { display: flex; align-items: center; background: #1c1c1e; border-radius: 14px; overflow: hidden; }
   .cop-input input { height: 56px; background: transparent; border: 0; }
   .cop-input span { padding: 0 18px; color: #8e8e93; }
+  .review-select { margin-top: 4px; padding: 0; color: #f2f2f7; background: transparent; border: 0; font-size: 1.05rem; font-weight: 600; }
   .detail-list { margin-top: 22px; }
   .detail-row { display: grid; grid-template-columns: 36px 1fr auto; align-items: center; min-height: 70px; border-bottom: 1px solid #1f1f22; }
   .detail-row > span { color: #8e8e93; }

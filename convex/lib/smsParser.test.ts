@@ -14,6 +14,8 @@ const messages = {
     "Bancolombia: Recibiste un pago de Nomina de HERCOSSIOS S.A. por $875,452.00 en tu cuenta de Ahorros el 29/05/2026 a las 16:50. Si tienes dudas, llamanos al 018000931987. A tu lado siempre.",
   incomingTransfer:
     "Bancolombia: David, recibiste una transferencia de SUSANA COSSIO SALAZAR por $1,000.00 en tu cuenta *7181 conectada a la llave @cossio781 el 14/06/26 a las 17:42. Con llaves es de una y gratis. Dudas al 018000912345.",
+  outgoingKeyTransfer:
+    "Bancolombia: DAVID, transferiste $1,000.00 a la llave 1037662972 desde tu cuenta *7181 a SUSANA COSSIO SALAZAR el 14/06/26 a las 17:56. Con Bre-b es de una y gratis. Dudas al 018000912345.",
   withdrawal:
     "Bancolombia: Retiraste $20.000,00 en MALLVERONA1 de tu T.Deb **6308 el 03/06/2026 a las 22:38. Si tienes dudas, llamanos al 6045109095. Estamos cerca.",
 };
@@ -95,6 +97,20 @@ describe("parseBancolombiaSms", () => {
   it("handles 2-digit year in date", () => {
     const parsed = parseBancolombiaSms(messages.incomingTransfer);
     expect(parsed.occurredAt).toBe(Date.UTC(2026, 5, 14, 22, 42));
+  });
+
+  it("parses outgoing key transfer as confirmed COP expense", () => {
+    expect(parseBancolombiaSms(messages.outgoingKeyTransfer)).toMatchObject({
+      rule: "transfer",
+      type: "expense",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor: 100_000,
+      amountCopMinor: 100_000,
+      merchant: "SUSANA COSSIO SALAZAR",
+      categoryName: "Transferencias",
+      accountLabel: "Cuenta *7181 · Llave 1037662972",
+    });
   });
 
   it("parses ATM withdrawal as confirmed COP expense", () => {
