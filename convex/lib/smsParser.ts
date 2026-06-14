@@ -2,6 +2,8 @@ export type ParsedSms = {
   matched: boolean;
   rule:
     | "transfer"
+    | "incoming_transfer"
+    | "withdrawal"
     | "purchase_cop"
     | "purchase_usd"
     | "payroll"
@@ -65,12 +67,13 @@ export function parseMoneyToMinor(
 
 function parseBogotaDate(message: string): number | null {
   const match = message.match(
-    /el\s+(\d{2})\/(\d{2})\/(\d{4})\s+a\s+las\s+(\d{2}):(\d{2})/i,
+    /el\s+(\d{2})\/(\d{2})\/(\d{2,4})\s+a\s+las\s+(\d{2}):(\d{2})/i,
   );
   if (!match) return null;
-  const [, day, month, year, hour, minute] = match;
+  const [, day, month, rawYear, hour, minute] = match;
+  const year = rawYear.length === 2 ? 2000 + Number(rawYear) : Number(rawYear);
   return Date.UTC(
-    Number(year),
+    year,
     Number(month) - MONTH_OFFSET,
     Number(day),
     Number(hour) + BOGOTA_UTC_OFFSET_HOURS,
@@ -166,6 +169,46 @@ export function parseBancolombiaSms(message: string): ParsedSms {
       categoryName: "Nómina",
       occurredAt,
       accountLabel: "Cuenta de Ahorros",
+    };
+  }
+
+  const incomingTransfer = normalized.match(
+    /recibiste\s+una\s+transferencia\s+de\s+(.+?)\s+por\s+\$([\d.,]+)/i,
+  );
+  if (incomingTransfer) {
+    const amountMinor = parseMoneyToMinor(incomingTransfer[2], "COP");
+    return {
+      matched: true,
+      rule: "incoming_transfer",
+      type: "income",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor,
+      amountCopMinor: amountMinor,
+      merchant: incomingTransfer[1].trim(),
+      categoryName: "Transferencias",
+      occurredAt,
+      accountLabel: extractAccount(normalized),
+    };
+  }
+
+  const withdrawal = normalized.match(
+    /Retiraste\s+\$([\d.,]+)\s+en\s+(.+?)\s+de\s+tu\s+T\.Deb/i,
+  );
+  if (withdrawal) {
+    const amountMinor = parseMoneyToMinor(withdrawal[1], "COP");
+    return {
+      matched: true,
+      rule: "withdrawal",
+      type: "expense",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor,
+      amountCopMinor: amountMinor,
+      merchant: withdrawal[2].trim(),
+      categoryName: "Retiros",
+      occurredAt,
+      accountLabel: extractAccount(normalized),
     };
   }
 
