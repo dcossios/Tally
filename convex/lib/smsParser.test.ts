@@ -16,6 +16,8 @@ const messages = {
     "Bancolombia: David, recibiste una transferencia de SUSANA COSSIO SALAZAR por $1,000.00 en tu cuenta *7181 conectada a la llave @cossio781 el 14/06/26 a las 17:42. Con llaves es de una y gratis. Dudas al 018000912345.",
   outgoingKeyTransfer:
     "Bancolombia: DAVID, transferiste $1,000.00 a la llave 1037662972 desde tu cuenta *7181 a SUSANA COSSIO SALAZAR el 14/06/26 a las 17:56. Con Bre-b es de una y gratis. Dudas al 018000912345.",
+  outgoingAliasTransfer:
+    "Bancolombia: DAVID, transferiste $12.00 a la llave @dco781 desde tu cuenta *7181 a David Cossio el 14/06/26 a las 20:02. Con Bre-b es de una y gratis. Dudas al 018000912345.",
   withdrawal:
     "Bancolombia: Retiraste $20.000,00 en MALLVERONA1 de tu T.Deb **6308 el 03/06/2026 a las 22:38. Si tienes dudas, llamanos al 6045109095. Estamos cerca.",
 };
@@ -110,6 +112,20 @@ describe("parseBancolombiaSms", () => {
       merchant: "SUSANA COSSIO SALAZAR",
       categoryName: "Transferencias",
       accountLabel: "Cuenta *7181 · Llave 1037662972",
+    });
+  });
+
+  it("parses outgoing key transfers that use an alias handle", () => {
+    expect(parseBancolombiaSms(messages.outgoingAliasTransfer)).toMatchObject({
+      rule: "transfer",
+      type: "expense",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor: 120000,
+      amountCopMinor: 120000,
+      merchant: "David Cossio",
+      categoryName: "Transferencias",
+      accountLabel: "Cuenta *7181 · Llave @dco781",
     });
   });
 

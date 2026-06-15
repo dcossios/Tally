@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, ExternalLink, KeyRound, LogOut, Smartphone, Tags, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-const SENDERS = ["855-40852-86", "874-00", "857-84"];
+const KEYWORDS = ["Bancolombia", "transferiste", "compraste", "recibiste"];
 
 export function SettingsScreen() {
   const { signOut } = useAuthActions();
@@ -32,12 +32,12 @@ export function SettingsScreen() {
     <div className="screen settings-screen">
       <header className="screen-header"><p>Automatización y cuenta</p><h1>Ajustes</h1></header>
       <section className="settings-section">
-        <div className="settings-title"><Smartphone /><div><h2>Shortcut de Messages</h2><p>Configura una automatización para cada remitente.</p></div></div>
+        <div className="settings-title"><Smartphone /><div><h2>Shortcut de Messages</h2><p>Usa una automatización por contenido; iOS falla con códigos cortos como 890220.</p></div></div>
         <ol className="shortcut-steps">
           <li>En Shortcuts, crea una automatización personal con el trigger <strong>Mensaje</strong>.</li>
-          <li>Selecciona uno de estos remitentes: {SENDERS.join(", ")}.</li>
+          <li>Deja <strong>Remitente</strong> vacío y en <strong>El mensaje contiene</strong> usa una palabra clave fija: {KEYWORDS.join(", ")}.</li>
           <li>Añade “Obtener contenido de URL”, método POST, cuerpo JSON.</li>
-          <li>Envía <code>sender</code>, <code>message</code> y <code>receivedAt</code> al endpoint.</li>
+          <li>Envía <code>sender</code>, <code>message</code> y <code>receivedAt</code> al endpoint. Para <code>sender</code>, usa la variable del remitente o fija <code>890220</code> si tu automatización ya filtra solo mensajes del banco.</li>
           <li>Agrega el header <code>Authorization: Bearer TOKEN</code> y activa ejecución inmediata.</li>
         </ol>
         <div className="endpoint-box">

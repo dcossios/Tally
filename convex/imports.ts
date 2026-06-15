@@ -1,10 +1,10 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { requireUserId } from "./lib/auth";
 import { normalizeMessage } from "./lib/hash";
 import { parseBancolombiaSms } from "./lib/smsParser";
-
-const ALLOWED_SENDERS = new Set(["855-40", "852-86", "874-00", "857-84"]);
+import { isAllowedSender } from "./lib/allowedSenders";
 
 export const processSms = internalMutation({
   args: {
@@ -22,7 +22,7 @@ export const processSms = internalMutation({
     if (!token || token.revokedAt !== undefined) {
       return { kind: "unauthorized" as const };
     }
-    if (!ALLOWED_SENDERS.has(args.sender)) {
+    if (!isAllowedSender(args.sender)) {
       return { kind: "sender_not_allowed" as const };
     }
     const duplicate = await ctx.db
@@ -32,7 +32,14 @@ export const processSms = internalMutation({
       )
       .unique();
     if (duplicate) {
-      return { kind: "duplicate" as const, importId: duplicate._id };
+      return {
+        kind: "duplicate" as const,
+        importId: duplicate._id,
+        transactionId: duplicate.transactionId,
+        parserRule: duplicate.parserRule,
+        parserError: duplicate.error,
+        status: duplicate.status,
+      };
     }
 
     const parsed = parseBancolombiaSms(normalizeMessage(args.message));
@@ -64,11 +71,24 @@ export const processSms = internalMutation({
     await ctx.db.patch("shortcutTokens", token._id, { lastUsedAt: Date.now() });
     return {
       kind: parsed.status === "pending" ? ("pending" as const) : ("created" as const),
-      importId,
-      transactionId,
+      ...importMetadata(importId, transactionId, parsed.rule, parsed.error),
     };
   },
 });
+
+function importMetadata(
+  importId: Id<"smsImports">,
+  transactionId: Id<"transactions">,
+  parserRule: string,
+  parserError?: string,
+) {
+  return {
+    importId,
+    transactionId,
+    parserRule,
+    parserError,
+  };
+}
 
 export const pending = query({
   args: {},
