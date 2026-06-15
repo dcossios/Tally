@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as categories from "../categories.js";
 import type * as http from "../http.js";
 import type * as imports from "../imports.js";
+import type * as lib_allowedSenders from "../lib/allowedSenders.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_smsParser from "../lib/smsParser.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   categories: typeof categories;
   http: typeof http;
   imports: typeof imports;
+  "lib/allowedSenders": typeof lib_allowedSenders;
   "lib/auth": typeof lib_auth;
   "lib/hash": typeof lib_hash;
   "lib/smsParser": typeof lib_smsParser;
