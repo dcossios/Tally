@@ -9,6 +9,7 @@ notificaciones de Bancolombia desde iOS Shortcuts.
 - Convex Database, HTTP Actions y Convex Auth con contraseña
 - Vitest para el parser de SMS
 - Vite PWA para instalación en iPhone
+- Web Push para abrir transacciones importadas desde la notificación
 
 ## Desarrollo
 
@@ -22,6 +23,27 @@ npm run dev:frontend
 El setup solicita la URL local y configura `SITE_URL`, `JWT_PRIVATE_KEY` y
 `JWKS` en el deployment de Convex. Las variables locales se guardan en
 `.env.local`.
+
+## Notificaciones push
+
+Para avisar cuando entra una transacción por SMS y abrirla directo desde la
+notificación, configura estas variables en Convex:
+
+```bash
+npx convex env set WEB_PUSH_PUBLIC_KEY "..."
+npx convex env set WEB_PUSH_PRIVATE_KEY "..."
+npx convex env set WEB_PUSH_SUBJECT "mailto:tu-correo@dominio.com"
+```
+
+Puedes generar las llaves VAPID con:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Luego entra a **Ajustes** en la app y toca **Activar notificaciones** una vez.
+Cuando llegue un movimiento importado por SMS, la notificación abrirá la
+transacción y mostrará el campo de nota para que anotes en qué fue el gasto.
 
 ## Automatización de iPhone
 

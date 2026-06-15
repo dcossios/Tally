@@ -1,7 +1,6 @@
 import { usePaginatedQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { TransactionRow } from "./TransactionRow";
-import { TransactionDialog } from "./TransactionDialog";
 import { useMemo, useState } from "react";
 import { ListFilter, Search } from "lucide-react";
 import type { Doc } from "../../convex/_generated/dataModel";
@@ -20,16 +19,23 @@ function signedMoney(minor: number) {
   return formatMoney(minor, "COP", minor >= 0 ? "positive" : "negative");
 }
 
-export function TransactionsScreen() {
+export function TransactionsScreen({
+  onSelectTransaction,
+}: {
+  onSelectTransaction: (transaction: Doc<"transactions">) => void;
+}) {
   const { results, status, loadMore } = usePaginatedQuery(api.transactions.list, {}, { initialNumItems: 30 });
-  const [selected, setSelected] = useState<Doc<"transactions"> | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => results.filter((tx) => {
     if (filter !== "all" && tx.type !== filter) return false;
-    if (search && !tx.merchant.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search) {
+      const term = search.toLowerCase();
+      const haystack = `${tx.merchant} ${tx.note ?? ""}`.toLowerCase();
+      if (!haystack.includes(term)) return false;
+    }
     return true;
   }), [results, filter, search]);
 
@@ -72,7 +78,7 @@ export function TransactionsScreen() {
       {groups.map((group) => (
         <div className="tx-group" key={group.label}>
           <div className="tx-date-header"><span>{group.label}</span><b>{signedMoney(group.total)}</b></div>
-          {group.items.map((transaction) => <TransactionRow key={transaction._id} transaction={transaction} onClick={() => setSelected(transaction)} />)}
+          {group.items.map((transaction) => <TransactionRow key={transaction._id} transaction={transaction} onClick={() => onSelectTransaction(transaction)} />)}
         </div>
       ))}
 
@@ -81,8 +87,6 @@ export function TransactionsScreen() {
       {filtered.length === 0 && status !== "LoadingFirstPage" ? (
         <div className="empty-state"><span className="emoji">🙈</span><h3>Sin movimientos</h3><p>Los registros aparecerán aquí.</p></div>
       ) : null}
-
-      <TransactionDialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)} transaction={selected ?? undefined} />
     </div>
   );
 }

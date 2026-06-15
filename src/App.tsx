@@ -10,6 +10,7 @@ import { TransactionsScreen } from "@/components/TransactionsScreen";
 import { ReviewScreen } from "@/components/ReviewScreen";
 import { SettingsScreen } from "@/components/SettingsScreen";
 import { TransactionDialog } from "@/components/TransactionDialog";
+import type { Doc, Id } from "../convex/_generated/dataModel";
 
 export default function App() {
   return <><Authenticated><SaldoApp /></Authenticated><Unauthenticated><AuthScreen /></Unauthenticated><Toaster position="top-center" richColors /></>;
@@ -27,19 +28,85 @@ function monthRange(date: Date) {
 }
 
 type HomeTab = "personal" | "shared";
+type NotificationTarget = { transactionId: Id<"transactions">; forceShowNote: boolean };
+
+function readNotificationTarget(): NotificationTarget | null {
+  const url = new URL(window.location.href);
+  const transactionId = url.searchParams.get("transactionId");
+  if (!transactionId) return null;
+  return {
+    transactionId: transactionId as Id<"transactions">,
+    forceShowNote: url.searchParams.get("openNote") === "1",
+  };
+}
+
+function clearNotificationTarget() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("transactionId");
+  url.searchParams.delete("openNote");
+  window.history.replaceState({}, "", url);
+}
 
 function SaldoApp() {
   const [screen, setScreen] = useState<Screen>("home");
   const [homeTab, setHomeTab] = useState<HomeTab>("personal");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogTransaction, setDialogTransaction] = useState<Doc<"transactions"> | null>(null);
+  const [forceShowNote, setForceShowNote] = useState(false);
   const [monthDate, setMonthDate] = useState(() => new Date());
+  const [notificationTarget, setNotificationTarget] = useState<NotificationTarget | null>(
+    () => readNotificationTarget(),
+  );
   const viewer = useQuery(api.users.viewer);
   const ensureDefaults = useMutation(api.categories.ensureDefaults);
   const range = useMemo(() => monthRange(monthDate), [monthDate]);
   const dashboard = useQuery(api.transactions.dashboard, range);
+  const notificationTransaction = useQuery(
+    api.transactions.get,
+    notificationTarget ? { id: notificationTarget.transactionId } : "skip",
+  );
 
   useEffect(() => { void ensureDefaults(); }, [ensureDefaults]);
   useEffect(() => { window.scrollTo({ top: 0, behavior: "auto" }); }, [screen]);
+  useEffect(() => {
+    const syncTarget = () => setNotificationTarget(readNotificationTarget());
+    window.addEventListener("popstate", syncTarget);
+    return () => window.removeEventListener("popstate", syncTarget);
+  }, []);
+  useEffect(() => {
+    if (!notificationTarget) return;
+    if (notificationTransaction === undefined) return;
+    setScreen("transactions");
+    setHomeTab("personal");
+    if (notificationTransaction) {
+      setDialogTransaction(notificationTransaction);
+      setForceShowNote(notificationTarget.forceShowNote);
+      setDialogOpen(true);
+    }
+    setNotificationTarget(null);
+    clearNotificationTarget();
+  }, [notificationTarget, notificationTransaction]);
+
+  const openCreateDialog = () => {
+    setDialogTransaction(null);
+    setForceShowNote(false);
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (transaction: Doc<"transactions">, options?: { forceShowNote?: boolean }) => {
+    setDialogTransaction(transaction);
+    setForceShowNote(options?.forceShowNote ?? false);
+    setDialogOpen(true);
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setDialogTransaction(null);
+      setForceShowNote(false);
+      clearNotificationTarget();
+    }
+  };
 
   return (
     <div className="app-shell">
@@ -55,12 +122,17 @@ function SaldoApp() {
               : <SharedScreen monthDate={monthDate} onSelectMonth={setMonthDate} />}
           </>
         ) : null}
-        {screen === "transactions" ? <TransactionsScreen /> : null}
+        {screen === "transactions" ? <TransactionsScreen onSelectTransaction={openEditDialog} /> : null}
         {screen === "review" ? <ReviewScreen onBack={() => setScreen("home")} /> : null}
         {screen === "settings" ? <SettingsScreen /> : null}
       </main>
-      <BottomNav screen={screen} pendingCount={dashboard?.pendingCount ?? 0} onNavigate={setScreen} onAdd={() => setDialogOpen(true)} />
-      <TransactionDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <BottomNav screen={screen} pendingCount={dashboard?.pendingCount ?? 0} onNavigate={setScreen} onAdd={openCreateDialog} />
+      <TransactionDialog
+        open={dialogOpen}
+        onOpenChange={handleDialogOpenChange}
+        transaction={dialogTransaction ?? undefined}
+        forceShowNote={forceShowNote}
+      />
     </div>
   );
 }

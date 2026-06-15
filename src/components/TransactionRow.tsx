@@ -13,12 +13,17 @@ function formatTime(timestamp: number) {
 
 export function TransactionRow({ transaction, onClick }: { transaction: Doc<"transactions">; onClick?: () => void }) {
   const visual = categoryVisual(transaction.categoryName, transaction.type);
+  const meta = transaction.status === "pending" ? "Por revisar" : formatTime(transaction.occurredAt);
+  const title = transaction.note?.trim() || transaction.merchant;
+  const subtitle = transaction.note?.trim()
+    ? `${transaction.merchant} · ${meta}`
+    : meta;
   return (
     <button className="tx-row" type="button" onClick={onClick}>
       <span className="cat-icon" style={{ background: visual.bg }}>{visual.emoji}</span>
       <span className="tx-main">
-        <strong>{transaction.merchant}</strong>
-        <small>{transaction.status === "pending" ? "Por revisar" : formatTime(transaction.occurredAt)}</small>
+        <strong>{title}</strong>
+        <small>{subtitle}</small>
       </span>
       <span className="tx-amount" data-type={transaction.type}>
         {formatMoney(transaction.amountMinor, transaction.currency, transaction.type === "income" ? "positive" : "negative")}

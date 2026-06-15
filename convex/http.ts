@@ -50,8 +50,18 @@ http.route({
       return json({ status: "duplicate", message: "El mensaje ya fue importado." }, 200);
     }
     if (result.kind === "pending") {
+      await ctx.scheduler.runAfter(0, internal.pushNotifications.sendTransactionRegistered, {
+        userId: result.userId,
+        transactionId: result.transactionId,
+        status: result.status,
+      });
       return json({ status: "pending", message: "Guardado para revisión." }, 202);
     }
+    await ctx.scheduler.runAfter(0, internal.pushNotifications.sendTransactionRegistered, {
+      userId: result.userId,
+      transactionId: result.transactionId,
+      status: result.status,
+    });
     return json({ status: "created", message: "Movimiento registrado." }, 201);
   }),
 });

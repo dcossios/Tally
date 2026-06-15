@@ -76,6 +76,17 @@ export default defineSchema({
   })
     .index("by_tokenHash", ["tokenHash"])
     .index("by_userId_and_createdAt", ["userId", "createdAt"]),
+  pushSubscriptions: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    expirationTime: v.optional(v.number()),
+    auth: v.string(),
+    p256dh: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId_and_endpoint", ["userId", "endpoint"])
+    .index("by_endpoint", ["endpoint"]),
 
   // ---------- Finanzas compartidas (bolsillo común) ----------
   sharedSpaces: defineTable({

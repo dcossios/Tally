@@ -68,6 +68,18 @@ export const list = query({
   },
 });
 
+export const get = query({
+  args: { id: v.id("transactions") },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const transaction = await ctx.db.get("transactions", args.id);
+    if (!transaction || transaction.userId !== userId) {
+      return null;
+    }
+    return transaction;
+  },
+});
+
 export const create = mutation({
   args: transactionFields,
   handler: async (ctx, args) => {
@@ -91,12 +103,15 @@ export const update = mutation({
     const current = await ctx.db.get("transactions", args.id);
     if (!current || current.userId !== userId) throw new Error("No encontrado.");
     const { id, ...fields } = args;
+    const nextStatus =
+      current.source === "sms" && current.status === "pending"
+        ? "pending"
+        : fields.currency === "USD" && fields.amountCopMinor === undefined
+          ? "pending"
+          : "confirmed";
     await ctx.db.patch("transactions", id, {
       ...fields,
-      status:
-        fields.currency === "USD" && fields.amountCopMinor === undefined
-          ? "pending"
-          : "confirmed",
+      status: nextStatus,
     });
     return null;
   },

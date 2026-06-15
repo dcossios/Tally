@@ -1,11 +1,18 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Copy, ExternalLink, KeyRound, LogOut, Smartphone, Tags, Trash2 } from "lucide-react";
+import { Bell, Copy, ExternalLink, KeyRound, LogOut, Smartphone, Tags, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  getBrowserNotificationPermission,
+  getSubscriptionDetails,
+  isPushSupported,
+  subscribeToPushNotifications,
+  unsubscribeFromPushNotifications,
+} from "@/lib/pushNotifications";
 
 const SENDERS = ["855-40852-86", "874-00", "857-84"];
 
@@ -17,8 +24,19 @@ export function SettingsScreen() {
   const seedDemo = useMutation(api.transactions.seedDemo);
   const categories = useQuery(api.categories.list, {});
   const createCategory = useMutation(api.categories.create);
+  const pushPublicKey = useQuery(api.pushSubscriptions.publicKey);
+  const pushSubscriptions = useQuery(api.pushSubscriptions.list);
+  const savePushSubscription = useMutation(api.pushSubscriptions.upsert);
+  const removePushSubscription = useMutation(api.pushSubscriptions.remove);
   const [newToken, setNewToken] = useState<string | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState(getBrowserNotificationPermission);
   const siteUrl = import.meta.env.VITE_CONVEX_SITE_URL as string;
+  const pushSupported = useMemo(() => isPushSupported(), []);
+
+  useEffect(() => {
+    setNotificationPermission(getBrowserNotificationPermission());
+  }, []);
 
   const generateToken = async () => {
     const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -28,9 +46,70 @@ export function SettingsScreen() {
     toast.success("Token creado. Guárdalo ahora.");
   };
 
+  const enableNotifications = async () => {
+    if (!pushPublicKey) {
+      toast.error("Falta configurar Web Push en el backend.");
+      return;
+    }
+    try {
+      setPushBusy(true);
+      const subscription = await subscribeToPushNotifications(pushPublicKey);
+      const details = getSubscriptionDetails(subscription);
+      await savePushSubscription(details);
+      setNotificationPermission(getBrowserNotificationPermission());
+      toast.success("Notificaciones activadas.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No fue posible activar las notificaciones.";
+      toast.error(message);
+      setNotificationPermission(getBrowserNotificationPermission());
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const disableNotifications = async () => {
+    try {
+      setPushBusy(true);
+      const subscription = await unsubscribeFromPushNotifications();
+      if (subscription) {
+        await removePushSubscription({ endpoint: subscription.endpoint });
+      }
+      setNotificationPermission(getBrowserNotificationPermission());
+      toast.success("Notificaciones desactivadas en este dispositivo.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No fue posible desactivar las notificaciones.";
+      toast.error(message);
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
   return (
     <div className="screen settings-screen">
       <header className="screen-header"><p>Automatización y cuenta</p><h1>Ajustes</h1></header>
+      <section className="settings-section">
+        <div className="settings-title"><Bell /><div><h2>Notificaciones</h2><p>Recibe una alerta al guardar un movimiento importado por SMS.</p></div></div>
+        {!pushSupported ? (
+          <p>Este dispositivo no soporta Web Push.</p>
+        ) : !pushPublicKey ? (
+          <p>Configura <code>WEB_PUSH_PUBLIC_KEY</code>, <code>WEB_PUSH_PRIVATE_KEY</code> y opcionalmente <code>WEB_PUSH_SUBJECT</code> en Convex para habilitarlas.</p>
+        ) : notificationPermission === "denied" ? (
+          <p>Safari tiene las notificaciones bloqueadas para esta app. Debes reactivarlas desde los ajustes del iPhone.</p>
+        ) : (
+          <>
+            <p>
+              {notificationPermission === "granted" && (pushSubscriptions?.length ?? 0) > 0
+                ? "Las notificaciones están activas en este dispositivo."
+                : "Actívalas para abrir la transacción desde la alerta y añadir una nota."}
+            </p>
+            {notificationPermission === "granted" && (pushSubscriptions?.length ?? 0) > 0 ? (
+              <Button variant="outline" onClick={() => void disableNotifications()} disabled={pushBusy}>Desactivar notificaciones</Button>
+            ) : (
+              <Button onClick={() => void enableNotifications()} disabled={pushBusy}>Activar notificaciones</Button>
+            )}
+          </>
+        )}
+      </section>
       <section className="settings-section">
         <div className="settings-title"><Smartphone /><div><h2>Shortcut de Messages</h2><p>Configura una automatización para cada remitente.</p></div></div>
         <ol className="shortcut-steps">

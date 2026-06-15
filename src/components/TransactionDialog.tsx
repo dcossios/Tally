@@ -24,7 +24,17 @@ function metaDateLabel(timestamp: number) {
   return { date: today ? `Hoy, ${dayMonth}` : dayMonth, time };
 }
 
-export function TransactionDialog({ open, onOpenChange, transaction }: { open: boolean; onOpenChange: (open: boolean) => void; transaction?: Doc<"transactions"> }) {
+export function TransactionDialog({
+  open,
+  onOpenChange,
+  transaction,
+  forceShowNote = false,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  transaction?: Doc<"transactions">;
+  forceShowNote?: boolean;
+}) {
   const create = useMutation(api.transactions.create);
   const update = useMutation(api.transactions.update);
   const remove = useMutation(api.transactions.remove);
@@ -45,12 +55,12 @@ export function TransactionDialog({ open, onOpenChange, transaction }: { open: b
     setType(transaction?.type ?? "expense");
     setRaw(transaction ? String(Math.round(transaction.amountMinor / 100)) : "");
     setNote(transaction?.note ?? "");
-    setShowNote(Boolean(transaction?.note));
+    setShowNote(forceShowNote || Boolean(transaction?.note));
     setCategoryId(transaction?.categoryId);
     setCategoryName(transaction?.categoryName);
     setShowCategories(false);
     setOccurredAt(transaction?.occurredAt ?? Date.now());
-  }, [open, transaction]);
+  }, [forceShowNote, open, transaction]);
 
   const pushKey = (key: string) => {
     setRaw((current) => {
@@ -75,8 +85,8 @@ export function TransactionDialog({ open, onOpenChange, transaction }: { open: b
     if (!value || value <= 0) { toast.error("Ingresa un monto."); return; }
     const amountMinor = Math.round(value * 100);
     const resolvedName = categoryName ?? transaction?.categoryName ?? "Sin categoría";
-    const merchant = note.trim()
-      || (resolvedName !== "Sin categoría" ? resolvedName : (type === "income" ? "Ingreso" : "Gasto"));
+    const merchant = transaction?.merchant
+      ?? (resolvedName !== "Sin categoría" ? resolvedName : (type === "income" ? "Ingreso" : "Gasto"));
     const payload = {
       type,
       currency: transaction?.currency ?? ("COP" as const),

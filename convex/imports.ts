@@ -65,7 +65,9 @@ export const processSms = internalMutation({
     return {
       kind: parsed.status === "pending" ? ("pending" as const) : ("created" as const),
       importId,
+      userId: token.userId,
       transactionId,
+      status: parsed.status,
     };
   },
 });
