@@ -24,7 +24,6 @@ export function SettingsScreen() {
   const seedDemo = useMutation(api.transactions.seedDemo);
   const categories = useQuery(api.categories.list, {});
   const createCategory = useMutation(api.categories.create);
-  const pushPublicKey = useQuery(api.pushSubscriptions.publicKey);
   const pushSubscriptions = useQuery(api.pushSubscriptions.list);
   const savePushSubscription = useMutation(api.pushSubscriptions.upsert);
   const removePushSubscription = useMutation(api.pushSubscriptions.remove);
@@ -32,6 +31,7 @@ export function SettingsScreen() {
   const [pushBusy, setPushBusy] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(getBrowserNotificationPermission);
   const siteUrl = import.meta.env.VITE_CONVEX_SITE_URL as string;
+  const pushPublicKey = import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY as string | undefined;
   const pushSupported = useMemo(() => isPushSupported(), []);
 
   useEffect(() => {

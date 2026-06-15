@@ -41,6 +41,12 @@ Puedes generar las llaves VAPID con:
 npx web-push generate-vapid-keys
 ```
 
+Además, agrega la llave pública al frontend en `.env.local`:
+
+```bash
+VITE_WEB_PUSH_PUBLIC_KEY="TU_LLAVE_PUBLICA"
+```
+
 Luego entra a **Ajustes** en la app y toca **Activar notificaciones** una vez.
 Cuando llegue un movimiento importado por SMS, la notificación abrirá la
 transacción y mostrará el campo de nota para que anotes en qué fue el gasto.
