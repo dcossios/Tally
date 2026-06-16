@@ -77,7 +77,7 @@ export function TransactionsScreen({
 
       {groups.map((group) => (
         <div className="tx-group" key={group.label}>
-          <div className="tx-date-header"><span>{group.label}</span><b>{signedMoney(group.total)}</b></div>
+          <div className="tx-date-header"><span>{group.label}</span><b data-sign={group.total >= 0 ? "pos" : "neg"}>{signedMoney(group.total)}</b></div>
           {group.items.map((transaction) => <TransactionRow key={transaction._id} transaction={transaction} onClick={() => onSelectTransaction(transaction)} />)}
         </div>
       ))}

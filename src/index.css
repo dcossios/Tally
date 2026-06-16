@@ -83,14 +83,18 @@
   .review-banner strong { font-weight: 600; }
   .review-banner .chevron { margin-left: auto; color: #8e8e93; font-size: 1.5rem; }
 
-  /* Daily expenses chart card */
+  /* Expense category chart card */
   .chart-card { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; padding: 20px 18px 16px; background: #1c1c1e; border-radius: 20px; }
   .chart-title { color: #8e8e93; font-size: .95rem; font-weight: 600; }
-  .bar-chart-bars { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; align-items: stretch; height: 150px; }
-  .bar-chart-bars .bar { position: relative; width: 100%; height: 100%; background: #2c2c2e; border-radius: 8px; }
-  .bar-chart-bars .bar .fill { position: absolute; inset: auto 0 0 0; border-radius: 8px; background: #34c759; }
-  .bar-chart-bars .bar[data-kind="expense"] .fill { background: #ff453a; }
-  .bar-chart-labels { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; color: #8e8e93; font-size: .8rem; font-weight: 600; text-align: center; }
+  .expense-pie-layout { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 18px; }
+  .expense-pie { display: grid; place-items: center; width: 140px; aspect-ratio: 1; border-radius: 50%; box-shadow: inset 0 0 0 22px #1c1c1e; }
+  .expense-pie span { max-width: 82px; color: #f2f2f7; font-size: .82rem; font-weight: 800; text-align: center; line-height: 1.15; }
+  .expense-pie-legend { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .expense-pie-legend div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+  .expense-pie-legend span { display: flex; align-items: center; gap: 8px; min-width: 0; color: #f2f2f7; font-size: .92rem; font-weight: 600; }
+  .expense-pie-legend span i { width: 10px; height: 10px; flex: 0 0 auto; border-radius: 50%; }
+  .expense-pie-legend strong { color: #ff453a; font-size: .92rem; font-weight: 700; white-space: nowrap; }
+  .chart-empty { color: #8e8e93; font-size: .92rem; line-height: 1.5; }
 
   .insights-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 48px 0 0; color: #8e8e93; }
   .insights-empty svg { width: 40px; height: 40px; color: #5a5a5e; }
@@ -118,6 +122,8 @@
   .tx-date-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 18px 0 10px; border-bottom: 1px solid #1f1f22; }
   .tx-date-header span { color: #8e8e93; font-size: .92rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
   .tx-date-header b { color: #8e8e93; font-size: .95rem; font-weight: 600; white-space: nowrap; }
+  .tx-date-header b[data-sign="pos"] { color: #8e8e93; }
+  .tx-date-header b[data-sign="neg"] { color: #ff453a; }
   .tx-row { width: 100%; display: grid; grid-template-columns: 48px minmax(0,1fr) auto; align-items: center; gap: 14px; min-height: 74px; text-align: left; }
   .cat-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 13px; font-size: 1.4rem; }
   .tx-main { display: flex; flex-direction: column; min-width: 0; }
@@ -125,6 +131,7 @@
   .tx-main small { color: #8e8e93; font-size: .92rem; }
   .tx-amount { font-size: 1.2rem; font-weight: 600; white-space: nowrap; text-align: right; }
   .tx-amount[data-type="income"] { color: #34c759; }
+  .tx-amount[data-type="expense"] { color: #ff453a; }
   .load-more { display: block; width: 100%; min-height: 48px; margin-top: 18px; color: #c7c7cc; background: #1c1c1e; border-radius: 14px; font-weight: 600; }
 
   /* ---------- Bottom nav ---------- */

@@ -2,6 +2,7 @@ import { ArrowDownRight, ArrowUpRight, ChevronsUpDown, Inbox } from "lucide-reac
 import type { Doc } from "../../convex/_generated/dataModel";
 import { formatMoney } from "@/lib/format";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { categoryVisual } from "@/lib/categoryVisual";
 
 type DashboardData = {
   incomeMinor: number;
@@ -9,9 +10,8 @@ type DashboardData = {
   balanceMinor: number;
   pendingCount: number;
   recent: Doc<"transactions">[];
+  expenseByCategory: { categoryName: string; amountMinor: number }[];
 };
-
-const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
 function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -25,27 +25,32 @@ function monthName(date: Date) {
   return new Intl.DateTimeFormat("es-CO", { month: "long" }).format(date);
 }
 
-function weekdayIndex(timestamp: number) {
-  const name = new Intl.DateTimeFormat("en-US", { timeZone: "America/Bogota", weekday: "short" }).format(timestamp);
-  return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(name);
-}
-
 export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransactions }: { data: DashboardData | undefined; name: string; monthDate: Date; onSelectMonth: (date: Date) => void; onReview: () => void; onTransactions: () => void }) {
   const income = data?.incomeMinor ?? 0;
   const expense = data?.expenseMinor ?? 0;
   const balance = data?.balanceMinor ?? 0;
   const recent = data?.recent ?? [];
+  const expenseByCategory = data?.expenseByCategory ?? [];
+  const categoryTotal = expenseByCategory.reduce((sum, item) => sum + item.amountMinor, 0);
+  const pieSegments = expenseByCategory.map((item, index) => {
+    const visual = categoryVisual(item.categoryName, "expense");
+    const percent = categoryTotal > 0 ? item.amountMinor / categoryTotal : 0;
+    return {
+      ...item,
+      color: visual.bg,
+      percent,
+      offset: expenseByCategory
+        .slice(0, index)
+        .reduce((sum, previous) => sum + (categoryTotal > 0 ? previous.amountMinor / categoryTotal : 0), 0),
+    };
+  });
+  const pieGradient = pieSegments.length > 0
+    ? `conic-gradient(${pieSegments.map((segment) => `${segment.color} ${segment.offset * 100}% ${(segment.offset + segment.percent) * 100}%`).join(", ")})`
+    : undefined;
 
   const now = new Date();
   const monthOptions = Array.from({ length: 12 }, (_, index) => new Date(now.getFullYear(), now.getMonth() - index, 1));
 
-  const dailyExpense = new Array(7).fill(0) as number[];
-  for (const tx of recent) {
-    if (tx.type !== "expense") continue;
-    const idx = weekdayIndex(tx.occurredAt);
-    if (idx >= 0) dailyExpense[idx] += tx.amountCopMinor ?? tx.amountMinor;
-  }
-  const maxBar = Math.max(...dailyExpense, 1);
   const hasEntries = recent.length > 0;
 
   return (
@@ -94,15 +99,24 @@ export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransact
 
       {hasEntries ? (
         <section className="chart-card">
-          <span className="chart-title">Gastos por día</span>
-          <div className="bar-chart-bars">
-            {dailyExpense.map((value, index) => (
-              <div className="bar" data-kind="expense" key={index}>
-                <span className="fill" style={{ height: `${Math.max((value / maxBar) * 100, value > 0 ? 6 : 0)}%` }} />
+          <span className="chart-title">Gastos por categoría</span>
+          {pieSegments.length > 0 ? (
+            <div className="expense-pie-layout">
+              <div className="expense-pie" style={{ background: pieGradient }}>
+                <span>{formatMoney(categoryTotal)}</span>
               </div>
-            ))}
-          </div>
-          <div className="bar-chart-labels">{DAY_LABELS.map((label, index) => <span key={index}>{label}</span>)}</div>
+              <div className="expense-pie-legend">
+                {pieSegments.slice(0, 6).map((segment) => (
+                  <div key={segment.categoryName}>
+                    <span><i style={{ background: segment.color }} />{segment.categoryName}</span>
+                    <strong>{formatMoney(segment.amountMinor)}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="chart-empty">No hay gastos confirmados en {monthName(monthDate)}.</p>
+          )}
         </section>
       ) : (
         <div className="insights-empty"><Inbox /><p>No hay movimientos en {monthName(monthDate)}.</p></div>

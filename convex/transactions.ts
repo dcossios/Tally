@@ -23,19 +23,30 @@ export const dashboard = query({
     const rows = await ctx.db
       .query("transactions")
       .withIndex("by_userId_and_occurredAt", (q) =>
-        q.eq("userId", userId).lt("occurredAt", args.monthEnd),
+        q
+          .eq("userId", userId)
+          .gte("occurredAt", args.monthStart)
+          .lt("occurredAt", args.monthEnd),
       )
       .order("desc")
       .take(500);
 
     let incomeMinor = 0;
     let expenseMinor = 0;
+    const categoryTotals = new Map<string, number>();
     const confirmed = rows.filter(
       (row) => row.status === "confirmed" && row.amountCopMinor !== undefined,
     );
     for (const row of confirmed) {
       if (row.type === "income") incomeMinor += row.amountCopMinor ?? 0;
-      else expenseMinor += row.amountCopMinor ?? 0;
+      else {
+        const amount = row.amountCopMinor ?? 0;
+        expenseMinor += amount;
+        categoryTotals.set(
+          row.categoryName,
+          (categoryTotals.get(row.categoryName) ?? 0) + amount,
+        );
+      }
     }
 
     const pending = await ctx.db
@@ -52,6 +63,9 @@ export const dashboard = query({
       balanceMinor: incomeMinor - expenseMinor,
       pendingCount: pending.length,
       recent: rows.slice(0, 6),
+      expenseByCategory: Array.from(categoryTotals.entries())
+        .map(([categoryName, amountMinor]) => ({ categoryName, amountMinor }))
+        .sort((a, b) => b.amountMinor - a.amountMinor),
     };
   },
 });
