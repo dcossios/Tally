@@ -226,6 +226,11 @@
   .settings-section p { color: #8e8e93; font-size: .9rem; }
   .settings-title { display: flex; gap: 12px; }
   .settings-title > svg { width: 24px; color: #f2f2f7; }
+  .export-range-tabs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; background: #2c2c2e; border-radius: 12px; }
+  .export-range-tabs button { min-height: 38px; color: #aeaeb2; border-radius: 9px; font-weight: 700; }
+  .export-range-tabs button[data-active="true"] { color: #000; background: #f2f2f7; }
+  .export-field { display: flex; flex-direction: column; gap: 7px; color: #aeaeb2; font-size: .85rem; font-weight: 700; }
+  .export-date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .shortcut-steps { display: flex; flex-direction: column; gap: 10px; padding-left: 20px; color: #aeaeb2; font-size: .9rem; line-height: 1.5; }
   .shortcut-steps code, .endpoint-box code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   .endpoint-box { display: grid; grid-template-columns: 1fr auto; gap: 5px; padding: 12px; background: #2c2c2e; border-radius: 12px; }

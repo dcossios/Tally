@@ -4,7 +4,13 @@ import { requireUserId } from "./lib/auth";
 import { normalizeMessage } from "./lib/hash";
 import { parseBancolombiaSms } from "./lib/smsParser";
 
-const ALLOWED_SENDERS = new Set(["855-40", "852-86", "874-00", "857-84"]);
+const ALLOWED_SENDERS = new Set([
+  "855-40",
+  "852-86",
+  "874-00",
+  "857-84",
+  "Bancolombia",
+]);
 
 export const processSms = internalMutation({
   args: {

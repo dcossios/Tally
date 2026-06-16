@@ -56,11 +56,14 @@ transacción y mostrará el campo de nota para que anotes en qué fue el gasto.
 Primero inicia sesión en Saldo, abre **Ajustes** y crea un token para el
 Shortcut. El token se muestra una sola vez.
 
-Crea tres automatizaciones personales en Shortcuts, una para cada remitente:
+Crea automatizaciones personales en Shortcuts, una para cada remitente que te
+aparezca en Mensajes:
 
-- `855-40852-86`
+- `855-40`
+- `852-86`
 - `874-00`
 - `857-84`
+- `Bancolombia`
 
 En cada automatización:
 

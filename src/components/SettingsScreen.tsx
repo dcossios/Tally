@@ -1,11 +1,13 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useMutation, useQuery } from "convex/react";
+import { useConvex, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Bell, Copy, ExternalLink, KeyRound, LogOut, Smartphone, Tags, Trash2 } from "lucide-react";
+import { Bell, Copy, Download, ExternalLink, KeyRound, LogOut, Smartphone, Tags, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { dateInputToBogota, toDateInput } from "@/lib/format";
+import { downloadTransactionsExcel } from "@/lib/exportExcel";
 import {
   getBrowserNotificationPermission,
   getSubscriptionDetails,
@@ -14,9 +16,11 @@ import {
   unsubscribeFromPushNotifications,
 } from "@/lib/pushNotifications";
 
-const SENDERS = ["855-40852-86", "874-00", "857-84"];
+const SENDERS = ["855-40", "852-86", "874-00", "857-84", "Bancolombia"];
+type ExportRangeMode = "all" | "month" | "custom";
 
 export function SettingsScreen() {
+  const convex = useConvex();
   const { signOut } = useAuthActions();
   const tokens = useQuery(api.shortcutTokens.list);
   const createToken = useMutation(api.shortcutTokens.create);
@@ -29,6 +33,11 @@ export function SettingsScreen() {
   const removePushSubscription = useMutation(api.pushSubscriptions.remove);
   const [newToken, setNewToken] = useState<string | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportRangeMode, setExportRangeMode] = useState<ExportRangeMode>("month");
+  const [exportMonth, setExportMonth] = useState(() => toMonthInput(Date.now()));
+  const [customStart, setCustomStart] = useState(() => toDateInput(Date.now()));
+  const [customEnd, setCustomEnd] = useState(() => toDateInput(Date.now()));
   const [notificationPermission, setNotificationPermission] = useState(getBrowserNotificationPermission);
   const siteUrl = import.meta.env.VITE_CONVEX_SITE_URL as string;
   const pushPublicKey = import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY as string | undefined;
@@ -84,9 +93,57 @@ export function SettingsScreen() {
     }
   };
 
+  const exportTransactions = async () => {
+    try {
+      setExportBusy(true);
+      const range = buildExportRange(exportRangeMode, exportMonth, customStart, customEnd);
+      const rows = await convex.query(api.transactions.exportData, range.queryArgs);
+      if (rows.length === 0) {
+        toast.info("No hay movimientos en ese rango.");
+        return;
+      }
+      await downloadTransactionsExcel(rows, range.label);
+      toast.success("Excel descargado.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No fue posible exportar el Excel.";
+      toast.error(message);
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
   return (
     <div className="screen settings-screen">
       <header className="screen-header"><p>Automatización y cuenta</p><h1>Ajustes</h1></header>
+      <section className="settings-section">
+        <div className="settings-title"><Download /><div><h2>Exportar Excel</h2><p>Descarga ingresos, gastos, notas y balance para el rango que elijas.</p></div></div>
+        <div className="export-range-tabs">
+          <button type="button" data-active={exportRangeMode === "all"} onClick={() => setExportRangeMode("all")}>Todo</button>
+          <button type="button" data-active={exportRangeMode === "month"} onClick={() => setExportRangeMode("month")}>Mes</button>
+          <button type="button" data-active={exportRangeMode === "custom"} onClick={() => setExportRangeMode("custom")}>Días</button>
+        </div>
+        {exportRangeMode === "month" ? (
+          <label className="export-field">
+            <span>Mes</span>
+            <Input type="month" value={exportMonth} onChange={(event) => setExportMonth(event.target.value)} />
+          </label>
+        ) : null}
+        {exportRangeMode === "custom" ? (
+          <div className="export-date-grid">
+            <label className="export-field">
+              <span>Desde</span>
+              <Input type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} />
+            </label>
+            <label className="export-field">
+              <span>Hasta</span>
+              <Input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} />
+            </label>
+          </div>
+        ) : null}
+        <Button onClick={() => void exportTransactions()} disabled={exportBusy}>
+          <Download /> {exportBusy ? "Preparando..." : "Descargar Excel"}
+        </Button>
+      </section>
       <section className="settings-section">
         <div className="settings-title"><Bell /><div><h2>Notificaciones</h2><p>Recibe una alerta al guardar un movimiento importado por SMS.</p></div></div>
         {!pushSupported ? (
@@ -171,4 +228,41 @@ export function SettingsScreen() {
       <section className="settings-section"><Button variant="outline" className="sign-out" onClick={() => void signOut()}><LogOut /> Cerrar sesión</Button></section>
     </div>
   );
+}
+
+function buildExportRange(
+  mode: ExportRangeMode,
+  month: string,
+  startDate: string,
+  endDate: string,
+) {
+  if (mode === "all") {
+    return { queryArgs: {}, label: "todo" };
+  }
+
+  if (mode === "month") {
+    if (!month) throw new Error("Selecciona un mes.");
+    const [yearText, monthText] = month.split("-");
+    const year = Number(yearText);
+    const monthIndex = Number(monthText) - 1;
+    const startAt = Date.parse(`${year}-${String(monthIndex + 1).padStart(2, "0")}-01T00:00:00-05:00`);
+    const nextYear = monthIndex === 11 ? year + 1 : year;
+    const nextMonth = monthIndex === 11 ? 1 : monthIndex + 2;
+    const endAt = Date.parse(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00-05:00`);
+    return { queryArgs: { startAt, endAt }, label: month };
+  }
+
+  if (!startDate || !endDate) throw new Error("Selecciona fecha inicial y final.");
+  const startAt = startOfDayBogota(startDate);
+  const endAt = startOfDayBogota(endDate) + 24 * 60 * 60 * 1000;
+  if (endAt <= startAt) throw new Error("La fecha final debe ser igual o posterior a la inicial.");
+  return { queryArgs: { startAt, endAt }, label: `${startDate}_a_${endDate}` };
+}
+
+function toMonthInput(timestamp: number) {
+  return toDateInput(timestamp).slice(0, 7);
+}
+
+function startOfDayBogota(value: string) {
+  return dateInputToBogota(value) - 12 * 60 * 60 * 1000;
 }

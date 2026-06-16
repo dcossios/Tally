@@ -25,6 +25,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "convex": "^1.41.0",
+    "exceljs": "^4.4.0",
     "lucide-react": "^1.18.0",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",

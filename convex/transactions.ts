@@ -68,6 +68,50 @@ export const list = query({
   },
 });
 
+export const exportData = query({
+  args: {
+    startAt: v.optional(v.number()),
+    endAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const rows = await ctx.db
+      .query("transactions")
+      .withIndex("by_userId_and_occurredAt", (q) => {
+        if (args.startAt !== undefined && args.endAt !== undefined) {
+          return q
+            .eq("userId", userId)
+            .gte("occurredAt", args.startAt)
+            .lt("occurredAt", args.endAt);
+        }
+        if (args.startAt !== undefined) {
+          return q.eq("userId", userId).gte("occurredAt", args.startAt);
+        }
+        if (args.endAt !== undefined) {
+          return q.eq("userId", userId).lt("occurredAt", args.endAt);
+        }
+        return q.eq("userId", userId);
+      })
+      .order("desc")
+      .take(5000);
+
+    return rows.map((row) => ({
+      id: row._id,
+      type: row.type,
+      status: row.status,
+      currency: row.currency,
+      amountMinor: row.amountMinor,
+      amountCopMinor: row.amountCopMinor ?? null,
+      merchant: row.merchant,
+      categoryName: row.categoryName,
+      occurredAt: row.occurredAt,
+      accountLabel: row.accountLabel ?? null,
+      note: row.note ?? null,
+      source: row.source,
+    }));
+  },
+});
+
 export const get = query({
   args: { id: v.id("transactions") },
   handler: async (ctx, args) => {
