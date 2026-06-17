@@ -87,6 +87,29 @@ export default defineSchema({
   })
     .index("by_userId_and_endpoint", ["userId", "endpoint"])
     .index("by_endpoint", ["endpoint"]),
+  goals: defineTable({
+    userId: v.id("users"),
+    kind: v.union(v.literal("saving"), v.literal("spendingLimit")),
+    name: v.string(),
+    targetMinor: v.number(),
+    startAt: v.number(),
+    endAt: v.number(),
+    categoryId: v.optional(v.id("categories")),
+    categoryName: v.optional(v.string()),
+    status: v.union(v.literal("active"), v.literal("archived")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId_and_status_and_endAt", ["userId", "status", "endAt"])
+    .index("by_userId_and_status_and_startAt", ["userId", "status", "startAt"]),
+  goalAlertStates: defineTable({
+    goalId: v.id("goals"),
+    userId: v.id("users"),
+    threshold: v.union(v.literal(80), v.literal(100)),
+    sentAt: v.number(),
+  })
+    .index("by_goalId_and_threshold", ["goalId", "threshold"])
+    .index("by_userId_and_goalId", ["userId", "goalId"]),
 
   // ---------- Finanzas compartidas (bolsillo común) ----------
   sharedSpaces: defineTable({

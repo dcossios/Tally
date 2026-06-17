@@ -1,16 +1,14 @@
-import { BarChart3, Hexagon, LayoutGrid, Plus, Receipt } from "lucide-react";
+import { BarChart3, Hexagon, Plus, Receipt, Target } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type Screen = "home" | "transactions" | "review" | "settings";
+export type Screen = "home" | "transactions" | "review" | "goals" | "settings";
 
 export function BottomNav({
   screen,
-  pendingCount,
   onNavigate,
   onAdd,
 }: {
   screen: Screen;
-  pendingCount: number;
   onNavigate: (screen: Screen) => void;
   onAdd: () => void;
 }) {
@@ -19,7 +17,7 @@ export function BottomNav({
       <NavButton active={screen === "transactions"} label="Movimientos" icon={<Receipt />} onClick={() => onNavigate("transactions")} />
       <NavButton active={screen === "home"} label="Resumen" icon={<BarChart3 />} onClick={() => onNavigate("home")} />
       <button className="nav-add" type="button" onClick={onAdd} aria-label="Añadir movimiento"><Plus /></button>
-      <NavButton active={screen === "review"} label="Revisar" icon={<LayoutGrid />} count={pendingCount} onClick={() => onNavigate("review")} />
+      <NavButton active={screen === "goals"} label="Metas" icon={<Target />} onClick={() => onNavigate("goals")} />
       <NavButton active={screen === "settings"} label="Ajustes" icon={<Hexagon />} onClick={() => onNavigate("settings")} />
     </nav>
   );

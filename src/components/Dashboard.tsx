@@ -1,8 +1,13 @@
-import { ArrowDownRight, ArrowUpRight, ChevronsUpDown, Inbox } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Bell, ChevronsUpDown, Inbox } from "lucide-react";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { formatMoney } from "@/lib/format";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { categoryVisual } from "@/lib/categoryVisual";
+
+// Paleta cohesiva y vívida para el donut; se asigna por orden de monto
+// para que las categorías siempre tengan colores distintos y legibles en dark.
+const CHART_COLORS = ["#5e9bff", "#30d158", "#ffb340", "#ff6f91", "#b07cf0", "#5ac8fa"];
+const DONUT_RADIUS = 42;
+const DONUT_CIRC = 2 * Math.PI * DONUT_RADIUS;
 
 type DashboardData = {
   incomeMinor: number;
@@ -31,22 +36,30 @@ export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransact
   const balance = data?.balanceMinor ?? 0;
   const recent = data?.recent ?? [];
   const expenseByCategory = data?.expenseByCategory ?? [];
-  const categoryTotal = expenseByCategory.reduce((sum, item) => sum + item.amountMinor, 0);
-  const pieSegments = expenseByCategory.map((item, index) => {
-    const visual = categoryVisual(item.categoryName, "expense");
+  // Ordena por monto y agrupa la cola en "Otros" para que el donut no se llene
+  // de tajadas diminutas e ilegibles.
+  const ranked = [...expenseByCategory].sort((a, b) => b.amountMinor - a.amountMinor);
+  const TOP = 5;
+  const visibleCategories = ranked.length > TOP + 1
+    ? [
+        ...ranked.slice(0, TOP),
+        { categoryName: "Otros", amountMinor: ranked.slice(TOP).reduce((sum, item) => sum + item.amountMinor, 0) },
+      ]
+    : ranked;
+  const categoryTotal = visibleCategories.reduce((sum, item) => sum + item.amountMinor, 0);
+  let cumulative = 0;
+  const pieSegments = visibleCategories.map((item, index) => {
     const percent = categoryTotal > 0 ? item.amountMinor / categoryTotal : 0;
-    return {
+    const segment = {
       ...item,
-      color: visual.bg,
+      color: index === TOP && visibleCategories.length === TOP + 1 ? "#8e8e93" : CHART_COLORS[index % CHART_COLORS.length],
       percent,
-      offset: expenseByCategory
-        .slice(0, index)
-        .reduce((sum, previous) => sum + (categoryTotal > 0 ? previous.amountMinor / categoryTotal : 0), 0),
+      dashOffset: -cumulative * DONUT_CIRC,
     };
+    cumulative += percent;
+    return segment;
   });
-  const pieGradient = pieSegments.length > 0
-    ? `conic-gradient(${pieSegments.map((segment) => `${segment.color} ${segment.offset * 100}% ${(segment.offset + segment.percent) * 100}%`).join(", ")})`
-    : undefined;
+  const donutGap = pieSegments.length > 1 ? 2.5 : 0;
 
   const now = new Date();
   const monthOptions = Array.from({ length: 12 }, (_, index) => new Date(now.getFullYear(), now.getMonth() - index, 1));
@@ -71,11 +84,15 @@ export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransact
         </DropdownMenu>
       </header>
 
-      <section className="hero-card">
+      <section className="hero-card" data-sign={balance >= 0 ? "pos" : "neg"}>
         <span className="hero-label">Balance de {monthName(monthDate)}</span>
         <strong className="hero-amount" data-sign={balance >= 0 ? "pos" : "neg"}>
           {formatMoney(balance, "COP", balance >= 0 ? "positive" : "negative")}
         </strong>
+        <div className="hero-breakdown">
+          <span><i className="dot-income" />Ingresos<b>{formatMoney(income)}</b></span>
+          <span><i className="dot-expense" />Gastos<b>{formatMoney(expense)}</b></span>
+        </div>
       </section>
 
       <section className="insights-cards">
@@ -91,8 +108,8 @@ export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransact
 
       {(data?.pendingCount ?? 0) > 0 ? (
         <button className="review-banner" type="button" onClick={onReview}>
-          <span className="card-icon expense">⚠️</span>
-          <span><small>Por revisar</small><strong>{data?.pendingCount} movimiento(s)</strong></span>
+          <span className="card-icon expense"><Bell /></span>
+          <span><small>Notificación</small><strong>{data?.pendingCount} movimiento(s) por aprobar</strong></span>
           <span className="chevron">›</span>
         </button>
       ) : null}
@@ -102,14 +119,35 @@ export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransact
           <span className="chart-title">Gastos por categoría</span>
           {pieSegments.length > 0 ? (
             <div className="expense-pie-layout">
-              <div className="expense-pie" style={{ background: pieGradient }}>
-                <span>{formatMoney(categoryTotal)}</span>
+              <div className="expense-donut">
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                  <circle className="donut-track" cx="50" cy="50" r={DONUT_RADIUS} />
+                  {pieSegments.map((segment) => {
+                    const length = Math.max(segment.percent * DONUT_CIRC - donutGap, 0.001);
+                    return (
+                      <circle
+                        key={segment.categoryName}
+                        className="donut-seg"
+                        cx="50"
+                        cy="50"
+                        r={DONUT_RADIUS}
+                        stroke={segment.color}
+                        strokeDasharray={`${length} ${DONUT_CIRC - length}`}
+                        strokeDashoffset={segment.dashOffset}
+                      />
+                    );
+                  })}
+                </svg>
+                <div className="donut-center">
+                  <small>Total</small>
+                  <strong>{formatMoney(categoryTotal)}</strong>
+                </div>
               </div>
               <div className="expense-pie-legend">
-                {pieSegments.slice(0, 6).map((segment) => (
+                {pieSegments.map((segment) => (
                   <div key={segment.categoryName}>
                     <span><i style={{ background: segment.color }} />{segment.categoryName}</span>
-                    <strong>{formatMoney(segment.amountMinor)}</strong>
+                    <strong>{formatMoney(segment.amountMinor)}<em>{Math.round(segment.percent * 100)}%</em></strong>
                   </div>
                 ))}
               </div>

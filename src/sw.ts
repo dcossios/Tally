@@ -26,6 +26,7 @@ self.addEventListener("push", (event) => {
       data: {
         url: payload.url,
         transactionId: payload.transactionId,
+        goalId: payload.goalId,
       },
     }),
   );
@@ -45,8 +46,9 @@ function readPayload(event: PushEvent) {
       title: string;
       body: string;
       url: string;
-      transactionId: string;
-    };
+    transactionId: string;
+    goalId?: string;
+  };
   } catch {
     return null;
   }

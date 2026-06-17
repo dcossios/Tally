@@ -1,4 +1,5 @@
 import { internalMutation, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { requireUserId } from "./lib/auth";
 import { normalizeMessage } from "./lib/hash";
@@ -68,6 +69,11 @@ export const processSms = internalMutation({
     });
     await ctx.db.patch("smsImports", importId, { transactionId });
     await ctx.db.patch("shortcutTokens", token._id, { lastUsedAt: Date.now() });
+    if (parsed.status === "confirmed") {
+      await ctx.scheduler.runAfter(0, internal.goals.evaluateSpendingLimitAlerts, {
+        userId: token.userId,
+      });
+    }
     return {
       kind: parsed.status === "pending" ? ("pending" as const) : ("created" as const),
       importId,
@@ -140,6 +146,7 @@ export const review = mutation({
       occurredAt: args.occurredAt ?? transaction.occurredAt,
     });
     await ctx.db.patch("smsImports", item._id, { status: "confirmed" });
+    await ctx.scheduler.runAfter(0, internal.goals.evaluateSpendingLimitAlerts, { userId });
     return null;
   },
 });

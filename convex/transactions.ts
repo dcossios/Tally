@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { requireUserId } from "./lib/auth";
 
@@ -142,15 +143,20 @@ export const create = mutation({
   args: transactionFields,
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    return ctx.db.insert("transactions", {
+    const status =
+      args.currency === "USD" && args.amountCopMinor === undefined
+        ? "pending"
+        : "confirmed";
+    const id = await ctx.db.insert("transactions", {
       ...args,
       userId,
-      status:
-        args.currency === "USD" && args.amountCopMinor === undefined
-          ? "pending"
-          : "confirmed",
+      status,
       source: "manual",
     });
+    if (status === "confirmed") {
+      await ctx.scheduler.runAfter(0, internal.goals.evaluateSpendingLimitAlerts, { userId });
+    }
+    return id;
   },
 });
 
@@ -171,6 +177,9 @@ export const update = mutation({
       ...fields,
       status: nextStatus,
     });
+    if (nextStatus === "confirmed") {
+      await ctx.scheduler.runAfter(0, internal.goals.evaluateSpendingLimitAlerts, { userId });
+    }
     return null;
   },
 });

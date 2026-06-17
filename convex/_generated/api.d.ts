@@ -10,9 +10,11 @@
 
 import type * as auth from "../auth.js";
 import type * as categories from "../categories.js";
+import type * as goals from "../goals.js";
 import type * as http from "../http.js";
 import type * as imports from "../imports.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_goals from "../lib/goals.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_smsParser from "../lib/smsParser.js";
 import type * as pushNotifications from "../pushNotifications.js";
@@ -31,9 +33,11 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   categories: typeof categories;
+  goals: typeof goals;
   http: typeof http;
   imports: typeof imports;
   "lib/auth": typeof lib_auth;
+  "lib/goals": typeof lib_goals;
   "lib/hash": typeof lib_hash;
   "lib/smsParser": typeof lib_smsParser;
   pushNotifications: typeof pushNotifications;

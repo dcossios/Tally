@@ -5,6 +5,7 @@ import { api } from "../convex/_generated/api";
 import { AuthScreen } from "@/components/AuthScreen";
 import { BottomNav, type Screen } from "@/components/BottomNav";
 import { Dashboard } from "@/components/Dashboard";
+import { GoalsScreen } from "@/components/GoalsScreen";
 import { SharedScreen } from "@/components/SharedScreen";
 import { TransactionsScreen } from "@/components/TransactionsScreen";
 import { ReviewScreen } from "@/components/ReviewScreen";
@@ -29,6 +30,7 @@ function monthRange(date: Date) {
 
 type HomeTab = "personal" | "shared";
 type NotificationTarget = { transactionId: Id<"transactions">; forceShowNote: boolean };
+type GoalTarget = { goalId: Id<"goals"> | null };
 
 function readNotificationTarget(): NotificationTarget | null {
   const url = new URL(window.location.href);
@@ -40,15 +42,26 @@ function readNotificationTarget(): NotificationTarget | null {
   };
 }
 
+function readGoalTarget(): GoalTarget | null {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("screen") !== "goals") return null;
+  return {
+    goalId: (url.searchParams.get("goalId") as Id<"goals"> | null) ?? null,
+  };
+}
+
 function clearNotificationTarget() {
   const url = new URL(window.location.href);
   url.searchParams.delete("transactionId");
   url.searchParams.delete("openNote");
+  url.searchParams.delete("screen");
+  url.searchParams.delete("goalId");
   window.history.replaceState({}, "", url);
 }
 
 function SaldoApp() {
-  const [screen, setScreen] = useState<Screen>("home");
+  const initialGoalTarget = readGoalTarget();
+  const [screen, setScreen] = useState<Screen>(initialGoalTarget ? "goals" : "home");
   const [homeTab, setHomeTab] = useState<HomeTab>("personal");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTransaction, setDialogTransaction] = useState<Doc<"transactions"> | null>(null);
@@ -57,6 +70,7 @@ function SaldoApp() {
   const [notificationTarget, setNotificationTarget] = useState<NotificationTarget | null>(
     () => readNotificationTarget(),
   );
+  const [goalTarget, setGoalTarget] = useState<GoalTarget | null>(() => initialGoalTarget);
   const viewer = useQuery(api.users.viewer);
   const ensureDefaults = useMutation(api.categories.ensureDefaults);
   const range = useMemo(() => monthRange(monthDate), [monthDate]);
@@ -69,10 +83,20 @@ function SaldoApp() {
   useEffect(() => { void ensureDefaults(); }, [ensureDefaults]);
   useEffect(() => { window.scrollTo({ top: 0, behavior: "auto" }); }, [screen]);
   useEffect(() => {
-    const syncTarget = () => setNotificationTarget(readNotificationTarget());
+    const syncTarget = () => {
+      setNotificationTarget(readNotificationTarget());
+      const nextGoalTarget = readGoalTarget();
+      setGoalTarget(nextGoalTarget);
+      if (nextGoalTarget) setScreen("goals");
+    };
     window.addEventListener("popstate", syncTarget);
     return () => window.removeEventListener("popstate", syncTarget);
   }, []);
+  useEffect(() => {
+    if (!goalTarget) return;
+    setScreen("goals");
+    clearNotificationTarget();
+  }, [goalTarget]);
   useEffect(() => {
     if (!notificationTarget) return;
     if (notificationTransaction === undefined) return;
@@ -123,10 +147,11 @@ function SaldoApp() {
           </>
         ) : null}
         {screen === "transactions" ? <TransactionsScreen onSelectTransaction={openEditDialog} /> : null}
+        {screen === "goals" ? <GoalsScreen focusGoalId={goalTarget?.goalId} /> : null}
         {screen === "review" ? <ReviewScreen onBack={() => setScreen("home")} /> : null}
         {screen === "settings" ? <SettingsScreen /> : null}
       </main>
-      <BottomNav screen={screen} pendingCount={dashboard?.pendingCount ?? 0} onNavigate={setScreen} onAdd={openCreateDialog} />
+      <BottomNav screen={screen} onNavigate={setScreen} onAdd={openCreateDialog} />
       <TransactionDialog
         open={dialogOpen}
         onOpenChange={handleDialogOpenChange}
