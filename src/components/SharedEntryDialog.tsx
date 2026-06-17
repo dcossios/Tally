@@ -3,7 +3,7 @@ import { api } from "../../convex/_generated/api";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlignLeft, Check, Delete, X } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 export type SharedEntryMode = "contribution" | "expense" | "savingsExpense";
 
@@ -92,6 +92,9 @@ export function SharedEntryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="calc-dialog">
         <DialogTitle className="sr-only">{TITLES[mode]}</DialogTitle>
+        <DialogDescription className="sr-only">
+          Ingresa el monto y una nota opcional para registrar el movimiento compartido.
+        </DialogDescription>
         <div className="calc-inner">
           <div className="calc-topbar">
             <button className="calc-round-btn" type="button" aria-label="Cerrar" onClick={() => onOpenChange(false)}><X /></button>

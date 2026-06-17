@@ -3,7 +3,7 @@ import { api } from "../../convex/_generated/api";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlignLeft, Check, Delete, LayoutGrid, Repeat, Trash2, X } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { categoryVisual } from "@/lib/categoryVisual";
 import { dateInputToBogota, toDateInput } from "@/lib/format";
 import type { Doc } from "../../convex/_generated/dataModel";
@@ -110,6 +110,9 @@ export function TransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="calc-dialog">
         <DialogTitle className="sr-only">{transaction ? "Editar movimiento" : "Nuevo movimiento"}</DialogTitle>
+        <DialogDescription className="sr-only">
+          Ingresa el monto, la categoría, la fecha y la nota opcional del movimiento.
+        </DialogDescription>
         <div className="calc-inner">
           <div className="calc-topbar">
             <button className="calc-round-btn" type="button" aria-label="Cerrar" onClick={() => onOpenChange(false)}><X /></button>

@@ -45,8 +45,10 @@ export function parseMoneyToMinor(
   if (decimalIndex >= 0) {
     const digitsAfter = value.length - decimalIndex - 1;
     const hasBothSeparators = lastDot >= 0 && lastComma >= 0;
+    const hasSingleSeparator = !hasBothSeparators;
     const shouldUseDecimals =
-      digitsAfter === 2 && (hasBothSeparators || currency === "USD");
+      digitsAfter === 2 &&
+      (hasBothSeparators || currency === "USD" || hasSingleSeparator);
 
     if (shouldUseDecimals) {
       integerPart = value.slice(0, decimalIndex);
@@ -83,7 +85,7 @@ function parseBogotaDate(message: string): number | null {
 
 function extractAccount(message: string): string | undefined {
   const match = message.match(
-    /(T\.(?:Cred|Deb)\s+\*\d+|cuenta\s+\*\d+)/i,
+    /(T\.(?:Cred|Deb)\s+\*+\d+|cuenta\s+\*+\d+)/i,
   );
   return match?.[1]?.replace(/\s+/g, " ");
 }
@@ -206,6 +208,26 @@ export function parseBancolombiaSms(message: string): ParsedSms {
       amountMinor,
       amountCopMinor: amountMinor,
       merchant: incomingTransfer[1].trim(),
+      categoryName: "Transferencias",
+      occurredAt,
+      accountLabel: extractAccount(normalized),
+    };
+  }
+
+  const incomingTransferAmountFirst = normalized.match(
+    /recibiste\s+una\s+transferencia\s+por\s+\$([\d.,]+)\s+de\s+(.+?)\s+en\s+tu\s+cuenta/i,
+  );
+  if (incomingTransferAmountFirst) {
+    const amountMinor = parseMoneyToMinor(incomingTransferAmountFirst[1], "COP");
+    return {
+      matched: true,
+      rule: "incoming_transfer",
+      type: "income",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor,
+      amountCopMinor: amountMinor,
+      merchant: incomingTransferAmountFirst[2].trim(),
       categoryName: "Transferencias",
       occurredAt,
       accountLabel: extractAccount(normalized),
