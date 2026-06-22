@@ -49,6 +49,9 @@ http.route({
     if (result.kind === "duplicate") {
       return json({ status: "duplicate", message: "El mensaje ya fue importado." }, 200);
     }
+    if (result.kind === "ignored") {
+      return json({ status: "ignored", message: "El mensaje no representa un movimiento." }, 200);
+    }
     if (result.kind === "pending") {
       await ctx.scheduler.runAfter(0, internal.pushNotifications.sendTransactionRegistered, {
         userId: result.userId,

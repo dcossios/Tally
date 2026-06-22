@@ -43,6 +43,10 @@ export const processSms = internalMutation({
     }
 
     const parsed = parseBancolombiaSms(normalizeMessage(args.message));
+    if (parsed.ignored) {
+      await ctx.db.patch("shortcutTokens", token._id, { lastUsedAt: Date.now() });
+      return { kind: "ignored" as const };
+    }
     const importId = await ctx.db.insert("smsImports", {
       userId: token.userId,
       sender: args.sender,

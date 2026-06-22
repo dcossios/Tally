@@ -24,6 +24,14 @@ const messages = {
     "Bancolombia: Transferiste $1,000 desde tu cuenta *7181 a la cuenta *37927414369 el 15/06/2026 a las 17:36. ¿Dudas? Llamanos al 018000931987. Estamos cerca.",
   withdrawal:
     "Bancolombia: Retiraste $20.000,00 en MALLVERONA1 de tu T.Deb **6308 el 03/06/2026 a las 22:38. Si tienes dudas, llamanos al 6045109095. Estamos cerca.",
+  productPayment:
+    "Bancolombia: Pagaste $3,483,350.00 a ALLIANZ SEGUROS SA desde tu producto 6261 el 17/06/2026 13:34:15. ¿Dudas? Llamanos al 6045109095.",
+  qrPayment:
+    "Bancolombia: MARIA ELENA SALAZAR JARAMILLO pagaste $50,000.00 por codigo QR desde tu cuenta *6261 a la llave 0089307694 el 17/06/2026 a las 11:40. Dudas al 018000912345.",
+  supplierPayment:
+    "Bancolombia: Recibiste un pago proveedor de HERCOSSIOS S.A. por $4,384,515.00 en tu cuenta corriente el 17/06/2026 a las 13:45. Si tienes dudas, llamanos al 018000931987.",
+  rejectedSuspiciousTransfer:
+    "Bancolombia: MARIA SALAZAR. Notamos una transferencia sospechosa desde tu cuenta corriente terminada en *6261 a la cuenta *6604 por valor de $200,000. Por tu seguridad rechazamos la transferencia el 2026/06/17 a las 12:49. Si tienes dudas, encuentranos aqui: 018000912345, opciones 3-3.",
 };
 
 describe("parseMoneyToMinor", () => {
@@ -169,6 +177,52 @@ describe("parseBancolombiaSms", () => {
       amountCopMinor: 2_000_000,
       merchant: "MALLVERONA1",
       categoryName: "Retiros",
+    });
+  });
+
+  it("parses product payments without 'a las' and with seconds", () => {
+    expect(parseBancolombiaSms(messages.productPayment)).toMatchObject({
+      rule: "product_payment",
+      type: "expense",
+      status: "confirmed",
+      amountMinor: 348_335_000,
+      amountCopMinor: 348_335_000,
+      merchant: "ALLIANZ SEGUROS SA",
+      accountLabel: "producto 6261",
+      categoryName: "Transferencias",
+    });
+  });
+
+  it("parses QR payments as confirmed COP expenses", () => {
+    expect(parseBancolombiaSms(messages.qrPayment)).toMatchObject({
+      rule: "qr_payment",
+      type: "expense",
+      status: "confirmed",
+      amountMinor: 5_000_000,
+      amountCopMinor: 5_000_000,
+      merchant: "Pago QR a llave 0089307694",
+      accountLabel: "cuenta *6261",
+      categoryName: "Transferencias",
+    });
+  });
+
+  it("parses supplier payments as income", () => {
+    expect(parseBancolombiaSms(messages.supplierPayment)).toMatchObject({
+      rule: "supplier_payment",
+      type: "income",
+      status: "confirmed",
+      amountMinor: 438_451_500,
+      amountCopMinor: 438_451_500,
+      merchant: "HERCOSSIOS S.A.",
+      categoryName: "Otros ingresos",
+    });
+  });
+
+  it("ignores rejected suspicious transfer alerts", () => {
+    expect(parseBancolombiaSms(messages.rejectedSuspiciousTransfer)).toMatchObject({
+      rule: "ignored_suspicious_transfer",
+      ignored: true,
+      matched: false,
     });
   });
 

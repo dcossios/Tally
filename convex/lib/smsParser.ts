@@ -7,6 +7,10 @@ export type ParsedSms = {
     | "purchase_cop"
     | "purchase_usd"
     | "payroll"
+    | "supplier_payment"
+    | "qr_payment"
+    | "product_payment"
+    | "ignored_suspicious_transfer"
     | "unknown";
   type: "expense" | "income";
   status: "confirmed" | "pending";
@@ -18,6 +22,7 @@ export type ParsedSms = {
   occurredAt: number;
   accountLabel?: string;
   error?: string;
+  ignored?: boolean;
 };
 
 const MONTH_OFFSET = 1;
@@ -69,10 +74,10 @@ export function parseMoneyToMinor(
 
 function parseBogotaDate(message: string): number | null {
   const match = message.match(
-    /el\s+(\d{2})\/(\d{2})\/(\d{2,4})\s+a\s+las\s+(\d{2}):(\d{2})/i,
+    /el\s+(\d{2})\/(\d{2})\/(\d{2,4})\s+(?:a\s+las\s+)?(\d{2}):(\d{2})(?::(\d{2}))?/i,
   );
   if (!match) return null;
-  const [, day, month, rawYear, hour, minute] = match;
+  const [, day, month, rawYear, hour, minute, second = "0"] = match;
   const year = rawYear.length === 2 ? 2000 + Number(rawYear) : Number(rawYear);
   return Date.UTC(
     year,
@@ -80,18 +85,27 @@ function parseBogotaDate(message: string): number | null {
     Number(day),
     Number(hour) + BOGOTA_UTC_OFFSET_HOURS,
     Number(minute),
+    Number(second),
   );
 }
 
 function extractAccount(message: string): string | undefined {
   const match = message.match(
-    /(T\.(?:Cred|Deb)\s+\*+\d+|cuenta\s+\*+\d+)/i,
+    /(T\.(?:Cred|Deb)\s+\*+\d+|cuenta\s+\**\d+|producto\s+\**\d+)/i,
   );
   return match?.[1]?.replace(/\s+/g, " ");
 }
 
 export function parseBancolombiaSms(message: string): ParsedSms {
   const normalized = normalizeForMatch(message);
+
+  if (
+    /transferencia\s+sospechosa/i.test(normalized) &&
+    /rechazamos\s+la\s+transferencia/i.test(normalized)
+  ) {
+    return ignored("ignored_suspicious_transfer");
+  }
+
   const occurredAt = parseBogotaDate(normalized);
   if (occurredAt === null) {
     return unknown("No se encontró una fecha válida.");
@@ -174,6 +188,46 @@ export function parseBancolombiaSms(message: string): ParsedSms {
     };
   }
 
+  const productPayment = normalized.match(
+    /Pagaste\s+\$([\d.,]+)\s+a\s+(.+?)\s+desde\s+tu\s+producto\s+(\*?\d+)\s+el\s+/i,
+  );
+  if (productPayment) {
+    const amountMinor = parseMoneyToMinor(productPayment[1], "COP");
+    return {
+      matched: true,
+      rule: "product_payment",
+      type: "expense",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor,
+      amountCopMinor: amountMinor,
+      merchant: productPayment[2].trim(),
+      categoryName: "Transferencias",
+      occurredAt,
+      accountLabel: `producto ${productPayment[3]}`,
+    };
+  }
+
+  const qrPayment = normalized.match(
+    /(?:[A-Z\s]+,\s+)?pagaste\s+\$([\d.,]+)\s+por\s+codigo\s+QR\s+desde\s+tu\s+cuenta\s+(\*?\d+)\s+a\s+la\s+llave\s+([^\s]+)\s+el\s+/i,
+  );
+  if (qrPayment) {
+    const amountMinor = parseMoneyToMinor(qrPayment[1], "COP");
+    return {
+      matched: true,
+      rule: "qr_payment",
+      type: "expense",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor,
+      amountCopMinor: amountMinor,
+      merchant: `Pago QR a llave ${qrPayment[3]}`,
+      categoryName: "Transferencias",
+      occurredAt,
+      accountLabel: `cuenta ${qrPayment[2]}`,
+    };
+  }
+
   const payroll = normalized.match(
     /Recibiste\s+un\s+pago\s+de\s+Nomina\s+de\s+(.+?)\s+por\s+\$([\d.,]+)/i,
   );
@@ -191,6 +245,26 @@ export function parseBancolombiaSms(message: string): ParsedSms {
       categoryName: "Nómina",
       occurredAt,
       accountLabel: "Cuenta de Ahorros",
+    };
+  }
+
+  const supplierPayment = normalized.match(
+    /Recibiste\s+un\s+pago\s+proveedor\s+de\s+(.+?)\s+por\s+\$([\d.,]+)/i,
+  );
+  if (supplierPayment) {
+    const amountMinor = parseMoneyToMinor(supplierPayment[2], "COP");
+    return {
+      matched: true,
+      rule: "supplier_payment",
+      type: "income",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor,
+      amountCopMinor: amountMinor,
+      merchant: supplierPayment[1].trim(),
+      categoryName: "Otros ingresos",
+      occurredAt,
+      accountLabel: extractAccount(normalized),
     };
   }
 
@@ -269,5 +343,20 @@ function unknown(error: string, occurredAt = Date.now()): ParsedSms {
     categoryName: "Sin categoría",
     occurredAt,
     error,
+  };
+}
+
+function ignored(rule: ParsedSms["rule"]): ParsedSms {
+  return {
+    matched: false,
+    rule,
+    type: "expense",
+    status: "pending",
+    currency: "COP",
+    amountMinor: 0,
+    merchant: "Movimiento ignorado",
+    categoryName: "Sin categoría",
+    occurredAt: Date.now(),
+    ignored: true,
   };
 }
