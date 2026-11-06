@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { requireUserId } from "./lib/auth";
+import { computeAccountBalance } from "./account";
 
 const transactionFields = {
   type: v.union(v.literal("expense"), v.literal("income")),
@@ -58,10 +59,13 @@ export const dashboard = query({
       .order("desc")
       .take(50);
 
+    const account = await computeAccountBalance(ctx, userId);
+
     return {
       incomeMinor,
       expenseMinor,
       balanceMinor: incomeMinor - expenseMinor,
+      account,
       pendingCount: pending.length,
       recent: rows.slice(0, 6),
       expenseByCategory: Array.from(categoryTotals.entries())

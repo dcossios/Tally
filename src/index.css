@@ -80,6 +80,20 @@
   .hero-amount { font-size: clamp(2.2rem, 11vw, 3rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
   .hero-amount[data-sign="pos"] { color: #34c759; }
   .hero-amount[data-sign="neg"] { color: #ff453a; }
+  .hero-amount[data-sign="account"] { color: #f2f2f7; }
+  .hero-sub { color: #8e8e93; font-size: .85rem; font-weight: 500; }
+  .hero-month { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 12px; color: #aeaeb2; font-size: .9rem; font-weight: 600; }
+  .hero-month b { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .hero-month b[data-sign="pos"] { color: #34c759; }
+  .hero-month b[data-sign="neg"] { color: #ff453a; }
+  .setup-balance-banner { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 14px; padding: 14px; background: linear-gradient(150deg, rgba(10,132,255,.16), rgba(10,132,255,.07)); border: 1px solid rgba(10,132,255,.3); border-radius: 18px; text-align: left; transition: transform .15s ease; }
+  .setup-balance-banner:active { transform: scale(.98); }
+  .setup-balance-banner .card-icon { display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 40px; color: #fff; background: linear-gradient(150deg, #0a84ff, #0060df); border-radius: 12px; }
+  .setup-balance-banner .card-icon svg { width: 20px; }
+  .setup-balance-banner span:nth-child(2) { display: flex; flex-direction: column; min-width: 0; }
+  .setup-balance-banner small { color: #64a8ff; font-size: .82rem; font-weight: 600; }
+  .setup-balance-banner strong { font-weight: 600; }
+  .setup-balance-banner .chevron { margin-left: auto; color: #64a8ff; font-size: 1.5rem; }
   .hero-breakdown { display: flex; gap: 18px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.08); }
   .hero-breakdown span { display: inline-flex; align-items: center; gap: 7px; color: #8e8e93; font-size: .9rem; font-weight: 600; }
   .hero-breakdown b { color: #f2f2f7; font-weight: 700; }
@@ -279,6 +293,20 @@
   .category-form { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; }
   .category-form select, .movement-form select { min-height: 44px; padding: 0 12px; color: #fff; background: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 10px; }
   .sign-out { color: #ff453a; }
+  .danger-text { color: #ff453a; }
+  .opening-summary { display: flex; flex-direction: column; gap: 2px; padding: 14px; background: #2c2c2e; border-radius: 14px; }
+  .opening-summary small { color: #8e8e93; font-size: .82rem; font-weight: 600; }
+  .opening-summary strong { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; }
+  .opening-summary span { color: #aeaeb2; font-size: .85rem; }
+  .opening-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
+  .money-input { position: relative; }
+  .money-input b { position: absolute; top: 50%; left: 14px; transform: translateY(-50%); color: #8e8e93; font-weight: 700; pointer-events: none; }
+  .money-input input { padding-left: 30px; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .reset-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .reset-buttons button { min-height: 46px; }
+  .reset-buttons svg, .goal-dialog button svg { width: 17px; }
+  .reset-count { padding: 12px 14px; color: #f2f2f7 !important; background: rgba(255,69,58,.1); border: 1px solid rgba(255,69,58,.25); border-radius: 12px; font-weight: 600; }
+  .field-hint { color: #8e8e93; font-size: .8rem; font-weight: 500; }
 
   /* ---------- Goals ---------- */
   .goals-screen { display: flex; flex-direction: column; gap: 16px; padding: calc(22px + env(safe-area-inset-top)) 20px 32px; }
@@ -326,7 +354,7 @@
   .goal-archive:active { background: #3a3a3c; }
   .goal-archive svg { width: 18px; }
   .goal-dialog { position: relative; width: min(calc(100vw - 32px), 440px); max-height: calc(100dvh - 32px); overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 22px; background: #121214; border: 1px solid #2c2c2e; border-radius: 20px; }
-  .goal-dialog > button[aria-label="Close"] { display: none; }
+  .goal-dialog > button[aria-label="Close"], .goal-dialog > button.absolute { display: none; }
   .goal-dialog h2 { padding-right: 42px; font-size: 1.4rem; font-weight: 800; }
   .goal-dialog p { color: #8e8e93; font-size: .9rem; line-height: 1.4; }
   .goal-close { position: absolute; top: 16px; right: 16px; display: grid; place-items: center; width: 36px; height: 36px; color: #c7c7cc; background: #2c2c2e; border-radius: 50%; }
@@ -500,6 +528,7 @@
   .settings-title { min-width: 0; }
   .settings-title > div { min-width: 0; }
   .category-form { grid-template-columns: 1fr; }
+  .reset-buttons { grid-template-columns: 1fr; }
   .endpoint-box { grid-template-columns: minmax(0, 1fr) auto; }
 
   .calc-dialog {

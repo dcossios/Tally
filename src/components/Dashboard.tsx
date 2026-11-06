@@ -1,6 +1,6 @@
-import { ArrowDownRight, ArrowUpRight, Bell, ChevronsUpDown, Inbox } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Bell, ChevronsUpDown, Inbox, Wallet } from "lucide-react";
 import type { Doc } from "../../convex/_generated/dataModel";
-import { formatMoney } from "@/lib/format";
+import { formatDate, formatMoney } from "@/lib/format";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Paleta cohesiva y vívida para el donut; se asigna por orden de monto
@@ -16,6 +16,7 @@ type DashboardData = {
   pendingCount: number;
   recent: Doc<"transactions">[];
   expenseByCategory: { categoryName: string; amountMinor: number }[];
+  account: { openingBalanceMinor: number; startAt: number; balanceMinor: number } | null;
 };
 
 function capitalize(value: string) {
@@ -30,10 +31,11 @@ function monthName(date: Date) {
   return new Intl.DateTimeFormat("es-CO", { month: "long" }).format(date);
 }
 
-export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransactions }: { data: DashboardData | undefined; name: string; monthDate: Date; onSelectMonth: (date: Date) => void; onReview: () => void; onTransactions: () => void }) {
+export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransactions, onSetupBalance }: { data: DashboardData | undefined; name: string; monthDate: Date; onSelectMonth: (date: Date) => void; onReview: () => void; onTransactions: () => void; onSetupBalance: () => void }) {
   const income = data?.incomeMinor ?? 0;
   const expense = data?.expenseMinor ?? 0;
   const balance = data?.balanceMinor ?? 0;
+  const account = data?.account ?? null;
   const recent = data?.recent ?? [];
   const expenseByCategory = data?.expenseByCategory ?? [];
   // Ordena por monto y agrupa la cola en "Otros" para que el donut no se llene
@@ -84,6 +86,25 @@ export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransact
         </DropdownMenu>
       </header>
 
+      {account ? (
+        <section className="hero-card" data-sign={account.balanceMinor >= 0 ? "pos" : "neg"}>
+          <span className="hero-label">Saldo en cuenta</span>
+          <strong className="hero-amount" data-sign={account.balanceMinor >= 0 ? "account" : "neg"}>
+            {formatMoney(account.balanceMinor, "COP", account.balanceMinor >= 0 ? undefined : "negative")}
+          </strong>
+          <span className="hero-sub">
+            Desde {formatMoney(account.openingBalanceMinor)} el {formatDate(account.startAt)}
+          </span>
+          <span className="hero-month">
+            Balance de {monthName(monthDate)}
+            <b data-sign={balance >= 0 ? "pos" : "neg"}>{formatMoney(balance, "COP", balance >= 0 ? "positive" : "negative")}</b>
+          </span>
+          <div className="hero-breakdown">
+            <span><i className="dot-income" />Ingresos<b>{formatMoney(income)}</b></span>
+            <span><i className="dot-expense" />Gastos<b>{formatMoney(expense)}</b></span>
+          </div>
+        </section>
+      ) : (
       <section className="hero-card" data-sign={balance >= 0 ? "pos" : "neg"}>
         <span className="hero-label">Balance de {monthName(monthDate)}</span>
         <strong className="hero-amount" data-sign={balance >= 0 ? "pos" : "neg"}>
@@ -94,6 +115,15 @@ export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransact
           <span><i className="dot-expense" />Gastos<b>{formatMoney(expense)}</b></span>
         </div>
       </section>
+      )}
+
+      {data && !account ? (
+        <button className="setup-balance-banner" type="button" onClick={onSetupBalance}>
+          <span className="card-icon"><Wallet /></span>
+          <span><small>Saldo inicial</small><strong>Agrega cuánto tienes hoy en la cuenta</strong></span>
+          <span className="chevron">›</span>
+        </button>
+      ) : null}
 
       <section className="insights-cards">
         <button className="insight-card" type="button" onClick={onTransactions}>

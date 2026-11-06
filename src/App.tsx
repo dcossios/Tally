@@ -142,7 +142,7 @@ function SaldoApp() {
               <button type="button" data-active={homeTab === "shared"} onClick={() => setHomeTab("shared")}>Juntos</button>
             </div>
             {homeTab === "personal"
-              ? <Dashboard data={dashboard} name={viewer?.name ?? "David"} monthDate={monthDate} onSelectMonth={setMonthDate} onReview={() => setScreen("review")} onTransactions={() => setScreen("transactions")} />
+              ? <Dashboard data={dashboard} name={viewer?.name ?? "David"} monthDate={monthDate} onSelectMonth={setMonthDate} onReview={() => setScreen("review")} onTransactions={() => setScreen("transactions")} onSetupBalance={() => setScreen("settings")} />
               : <SharedScreen monthDate={monthDate} onSelectMonth={setMonthDate} />}
           </>
         ) : null}

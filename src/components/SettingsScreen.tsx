@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Bell, Copy, Download, ExternalLink, KeyRound, LogOut, Smartphone, Tags, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { OpeningBalanceSection, ResetSection } from "@/components/AccountSettings";
 import { dateInputToBogota, toDateInput } from "@/lib/format";
 import { downloadTransactionsExcel } from "@/lib/exportExcel";
 import {
@@ -115,6 +116,7 @@ export function SettingsScreen() {
   return (
     <div className="screen settings-screen">
       <header className="screen-header"><p>Automatización y cuenta</p><h1>Ajustes</h1></header>
+      <OpeningBalanceSection />
       <section className="settings-section">
         <div className="settings-title"><Download /><div><h2>Exportar Excel</h2><p>Descarga ingresos, gastos, notas y balance para el rango que elijas.</p></div></div>
         <div className="export-range-tabs">
@@ -225,6 +227,7 @@ export function SettingsScreen() {
         <h2>Datos de demostración</h2><p>Carga los cinco mensajes de ejemplo para validar el dashboard.</p>
         <Button variant="outline" onClick={() => void seedDemo().then((created) => created ? toast.success("Datos cargados.") : toast.info("Ya existen movimientos."))}>Cargar ejemplos</Button>
       </section>
+      <ResetSection />
       <section className="settings-section"><Button variant="outline" className="sign-out" onClick={() => void signOut()}><LogOut /> Cerrar sesión</Button></section>
     </div>
   );

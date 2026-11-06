@@ -34,6 +34,14 @@ export default defineSchema({
       "categoryId",
       "occurredAt",
     ]),
+  // Saldo inicial de la cuenta: el dinero que había al empezar a registrar.
+  // Los movimientos desde `startAt` se suman o restan a este monto.
+  accountSettings: defineTable({
+    userId: v.id("users"),
+    openingBalanceMinor: v.number(),
+    startAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
   smsImports: defineTable({
     userId: v.id("users"),
     sender: v.string(),
