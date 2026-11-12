@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
@@ -16,6 +16,16 @@ async function authedTest() {
 }
 
 describe("goals API", () => {
+  // Las alertas comparan las fechas de la meta con Date.now(); se fija el reloj
+  // dentro del periodo de la meta para que el test no dependa del día en que corre.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-06-20T12:00:00-05:00"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("creates, lists, updates, and archives goals", async () => {
     const { authed } = await authedTest();
 
