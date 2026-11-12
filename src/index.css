@@ -48,8 +48,8 @@
   /* ---------- Insights (home) ---------- */
   .insights-screen { padding: calc(20px + env(safe-area-inset-top)) 22px 28px; }
   .insights-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .insights-header h1 { font-size: 2.3rem; font-weight: 800; letter-spacing: -.02em; }
-  .period-pill { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 14px; color: #f2f2f7; background: #1c1c1e; border-radius: 12px; font-weight: 600; }
+  .insights-header h1 { min-width: 0; font-size: clamp(2rem, 9vw, 2.3rem); font-weight: 800; letter-spacing: -.02em; }
+  .period-pill { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; min-height: 40px; padding: 0 12px; color: #f2f2f7; background: #1c1c1e; border-radius: 12px; font-size: .86rem; font-weight: 600; white-space: nowrap; }
   .period-pill svg { width: 16px; flex: 0 0 auto; color: #8e8e93; }
   .month-menu { max-height: 320px; overflow-y: auto; min-width: 180px; }
   .month-menu [role="menuitem"] { padding: 10px 12px; font-size: .95rem; }
@@ -78,6 +78,8 @@
   .hero-card > * { position: relative; z-index: 1; }
   .hero-label { color: #aeaeb2; font-size: .95rem; font-weight: 600; }
   .hero-amount { font-size: clamp(2.2rem, 11vw, 3rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; }
+  .hero-amount[data-size="sm"] { font-size: clamp(1.8rem, 8.8vw, 2.5rem); }
+  .hero-amount[data-size="xs"] { font-size: clamp(1.5rem, 7vw, 2.1rem); }
   .hero-amount[data-sign="pos"] { color: #34c759; }
   .hero-amount[data-sign="neg"] { color: #ff453a; }
   .hero-amount[data-sign="account"] { color: #f2f2f7; }
@@ -302,6 +304,8 @@
   .money-input { position: relative; }
   .money-input b { position: absolute; top: 50%; left: 14px; transform: translateY(-50%); color: #8e8e93; font-weight: 700; pointer-events: none; }
   .money-input input { padding-left: 30px; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .money-input-usd b { font-size: .8rem; letter-spacing: .02em; }
+  .money-input-usd input { padding-left: 54px; }
   .reset-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .reset-buttons button { min-height: 46px; }
   .reset-buttons svg, .goal-dialog button svg { width: 17px; }
@@ -480,7 +484,7 @@
 @media (max-width: 360px) {
   .insights-screen { padding-right: 14px; padding-left: 14px; }
   .home-tabs { padding-right: 14px; padding-left: 14px; }
-  .insights-header { gap: 8px; }
+  .insights-header { flex-wrap: wrap; gap: 8px; }
   .insights-header h1 { font-size: 2rem; letter-spacing: 0; }
   .period-pill { flex: 0 0 auto; gap: 5px; min-height: 38px; padding: 0 10px; font-size: .86rem; line-height: 1; white-space: nowrap; }
   .period-pill svg { width: 14px; }

@@ -1,6 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, Bell, ChevronsUpDown, Inbox, Wallet } from "lucide-react";
 import type { Doc } from "../../convex/_generated/dataModel";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatDate, formatMoney, formatOpeningBreakdown } from "@/lib/format";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Paleta cohesiva y vívida para el donut; se asigna por orden de monto
@@ -16,7 +16,14 @@ type DashboardData = {
   pendingCount: number;
   recent: Doc<"transactions">[];
   expenseByCategory: { categoryName: string; amountMinor: number }[];
-  account: { openingBalanceMinor: number; startAt: number; balanceMinor: number } | null;
+  account: {
+    openingBalanceMinor: number;
+    openingUsdMinor: number;
+    usdRateCopMinor: number | null;
+    openingTotalMinor: number;
+    startAt: number;
+    balanceMinor: number;
+  } | null;
 };
 
 function capitalize(value: string) {
@@ -36,6 +43,10 @@ export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransact
   const expense = data?.expenseMinor ?? 0;
   const balance = data?.balanceMinor ?? 0;
   const account = data?.account ?? null;
+  // El saldo grande se achica cuando el monto es largo para que no se corte en celular.
+  const accountText = account
+    ? formatMoney(account.balanceMinor, "COP", account.balanceMinor >= 0 ? undefined : "negative")
+    : "";
   const recent = data?.recent ?? [];
   const expenseByCategory = data?.expenseByCategory ?? [];
   // Ordena por monto y agrupa la cola en "Otros" para que el donut no se llene
@@ -89,12 +100,21 @@ export function Dashboard({ data, monthDate, onSelectMonth, onReview, onTransact
       {account ? (
         <section className="hero-card" data-sign={account.balanceMinor >= 0 ? "pos" : "neg"}>
           <span className="hero-label">Saldo en cuenta</span>
-          <strong className="hero-amount" data-sign={account.balanceMinor >= 0 ? "account" : "neg"}>
-            {formatMoney(account.balanceMinor, "COP", account.balanceMinor >= 0 ? undefined : "negative")}
+          <strong className="hero-amount" data-sign={account.balanceMinor >= 0 ? "account" : "neg"} data-size={accountText.length > 15 ? "xs" : accountText.length > 12 ? "sm" : undefined}>
+            {accountText}
           </strong>
-          <span className="hero-sub">
-            Desde {formatMoney(account.openingBalanceMinor)} el {formatDate(account.startAt)}
-          </span>
+          {account.usdRateCopMinor !== null ? (
+            <>
+              <span className="hero-sub">
+                {formatOpeningBreakdown(account.openingBalanceMinor, account.openingUsdMinor, account.usdRateCopMinor)}
+              </span>
+              <span className="hero-sub">Desde el {formatDate(account.startAt)}</span>
+            </>
+          ) : (
+            <span className="hero-sub">
+              Desde {formatMoney(account.openingBalanceMinor)} el {formatDate(account.startAt)}
+            </span>
+          )}
           <span className="hero-month">
             Balance de {monthName(monthDate)}
             <b data-sign={balance >= 0 ? "pos" : "neg"}>{formatMoney(balance, "COP", balance >= 0 ? "positive" : "negative")}</b>

@@ -17,16 +17,59 @@ async function getSettings(ctx: QueryCtx | MutationCtx, userId: Id<"users">) {
     .unique();
 }
 
+type OpeningAmounts = {
+  openingBalanceMinor: number;
+  openingUsdMinor?: number;
+  usdRateCopMinor?: number;
+};
+
+/** Dólares del saldo inicial convertidos a pesos con la tasa guardada. */
+function usdInCopMinor(amounts: OpeningAmounts) {
+  if (!amounts.openingUsdMinor || !amounts.usdRateCopMinor) return 0;
+  return Math.round((amounts.openingUsdMinor * amounts.usdRateCopMinor) / 100);
+}
+
+/** Saldo inicial total en pesos = pesos + dólares convertidos. */
+export function openingTotalMinor(amounts: OpeningAmounts) {
+  return amounts.openingBalanceMinor + usdInCopMinor(amounts);
+}
+
+function openingFields(settings: OpeningAmounts & { startAt: number }) {
+  const hasUsd = usdInCopMinor(settings) > 0;
+  return {
+    // Parte en pesos (sin los dólares).
+    openingBalanceMinor: settings.openingBalanceMinor,
+    openingUsdMinor: hasUsd ? settings.openingUsdMinor! : 0,
+    usdRateCopMinor: hasUsd ? settings.usdRateCopMinor! : null,
+    openingTotalMinor: openingTotalMinor(settings),
+    startAt: settings.startAt,
+  };
+}
+
 async function writeOpeningBalance(
   ctx: MutationCtx,
   userId: Id<"users">,
-  openingBalanceMinor: number,
+  amounts: OpeningAmounts,
   startAt: number,
 ) {
-  if (!Number.isFinite(openingBalanceMinor)) throw new Error("Monto inválido.");
+  const { openingBalanceMinor } = amounts;
+  const usdMinor = Math.round(amounts.openingUsdMinor ?? 0);
+  if (!Number.isFinite(openingBalanceMinor) || !Number.isFinite(usdMinor) || usdMinor < 0) {
+    throw new Error("Monto inválido.");
+  }
+  let rateMinor: number | undefined;
+  if (usdMinor > 0) {
+    rateMinor = Math.round(amounts.usdRateCopMinor ?? 0);
+    if (!Number.isFinite(rateMinor) || rateMinor <= 0) {
+      throw new Error("Ingresa la tasa de cambio.");
+    }
+  }
   const current = await getSettings(ctx, userId);
+  // Sin dólares, los campos van como undefined para que el patch los borre.
   const fields = {
     openingBalanceMinor: Math.round(openingBalanceMinor),
+    openingUsdMinor: usdMinor > 0 ? usdMinor : undefined,
+    usdRateCopMinor: rateMinor,
     startAt,
     updatedAt: Date.now(),
   };
@@ -52,11 +95,8 @@ export async function computeAccountBalance(
     if (row.status !== "confirmed" || row.amountCopMinor === undefined) continue;
     netMinor += row.type === "income" ? row.amountCopMinor : -row.amountCopMinor;
   }
-  return {
-    openingBalanceMinor: settings.openingBalanceMinor,
-    startAt: settings.startAt,
-    balanceMinor: settings.openingBalanceMinor + netMinor,
-  };
+  const opening = openingFields(settings);
+  return { ...opening, balanceMinor: opening.openingTotalMinor + netMinor };
 }
 
 export const getOpeningBalance = query({
@@ -65,18 +105,21 @@ export const getOpeningBalance = query({
     const userId = await requireUserId(ctx);
     const settings = await getSettings(ctx, userId);
     if (!settings) return null;
-    return {
-      openingBalanceMinor: settings.openingBalanceMinor,
-      startAt: settings.startAt,
-    };
+    return openingFields(settings);
   },
 });
 
 export const setOpeningBalance = mutation({
-  args: { openingBalanceMinor: v.number(), startAt: v.number() },
+  args: {
+    openingBalanceMinor: v.number(),
+    openingUsdMinor: v.optional(v.number()),
+    usdRateCopMinor: v.optional(v.number()),
+    startAt: v.number(),
+  },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    await writeOpeningBalance(ctx, userId, args.openingBalanceMinor, args.startAt);
+    const { startAt, ...amounts } = args;
+    await writeOpeningBalance(ctx, userId, amounts, startAt);
     return null;
   },
 });
@@ -194,12 +237,21 @@ export const resetMonth = mutation({
 });
 
 export const resetAll = mutation({
-  args: { openingBalanceMinor: v.optional(v.number()) },
+  args: {
+    openingBalanceMinor: v.optional(v.number()),
+    openingUsdMinor: v.optional(v.number()),
+    usdRateCopMinor: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const result = await deleteBatch(ctx, userId, undefined, undefined);
-    if (args.openingBalanceMinor !== undefined) {
-      await writeOpeningBalance(ctx, userId, args.openingBalanceMinor, Date.now());
+    if (args.openingBalanceMinor !== undefined || (args.openingUsdMinor ?? 0) > 0) {
+      await writeOpeningBalance(
+        ctx,
+        userId,
+        { ...args, openingBalanceMinor: args.openingBalanceMinor ?? 0 },
+        Date.now(),
+      );
     } else {
       const current = await getSettings(ctx, userId);
       if (current) await ctx.db.delete("accountSettings", current._id);

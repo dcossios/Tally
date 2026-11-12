@@ -22,6 +22,19 @@ export function formatMoney(
   return amount;
 }
 
+/** "$2.000.000 + USD 500,00 (a $4.100)"; sin pesos, solo la parte en dólares. */
+export function formatOpeningBreakdown(
+  copMinor: number,
+  usdMinor: number,
+  usdRateCopMinor: number,
+) {
+  // Espacios duros: si no cabe en una línea, solo se parte entre el monto y la tasa.
+  const nbsp = " ";
+  const hard = (text: string) => text.replace(/ /g, nbsp);
+  const usd = `${hard(formatMoney(usdMinor, "USD"))} ${hard(`(a ${formatMoney(usdRateCopMinor)})`)}`;
+  return copMinor === 0 ? usd : `${hard(`${formatMoney(copMinor)} +`)} ${usd}`;
+}
+
 export function formatDate(timestamp: number, long = false) {
   return new Intl.DateTimeFormat("es-CO", {
     timeZone: "America/Bogota",

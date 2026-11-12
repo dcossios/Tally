@@ -6,7 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { dateInputToBogota, formatDate, formatMoney, toDateInput } from "@/lib/format";
+import { dateInputToBogota, formatDate, formatMoney, formatOpeningBreakdown, toDateInput } from "@/lib/format";
 
 // Muestra "1.250.000" mientras se escribe; guarda solo dígitos.
 function formatDigits(digits: string) {
@@ -16,6 +16,93 @@ function formatDigits(digits: string) {
 
 function onlyDigits(value: string) {
   return value.replace(/[^\d]/g, "").replace(/^0+(?=\d)/, "").slice(0, 13);
+}
+
+// Dólares mientras se escriben: dígitos y una coma decimal con hasta 2 decimales.
+function cleanUsd(value: string) {
+  const [whole = "", ...rest] = value.replace(/\./g, ",").replace(/[^\d,]/g, "").split(",");
+  const integer = whole.replace(/^0+(?=\d)/, "").slice(0, 9);
+  if (rest.length === 0) return integer;
+  return `${integer || "0"},${rest.join("").slice(0, 2)}`;
+}
+
+type OpeningAmounts = { cop: string; usd: string; rate: string };
+const EMPTY_AMOUNTS: OpeningAmounts = { cop: "", usd: "", rate: "" };
+
+function usdToMinor(usd: string) {
+  return Math.round(Number(usd.replace(",", ".")) * 100) || 0;
+}
+
+/** Convierte lo escrito a los argumentos del backend (todo en centavos). */
+function amountsToArgs(amounts: OpeningAmounts) {
+  const usdMinor = usdToMinor(amounts.usd);
+  const hasUsd = usdMinor > 0;
+  return {
+    openingBalanceMinor: Number(amounts.cop || 0) * 100,
+    openingUsdMinor: hasUsd ? usdMinor : undefined,
+    usdRateCopMinor: hasUsd && amounts.rate ? Number(amounts.rate) * 100 : undefined,
+  };
+}
+
+function amountsTotalMinor(amounts: OpeningAmounts) {
+  const args = amountsToArgs(amounts);
+  return args.openingBalanceMinor + Math.round(((args.openingUsdMinor ?? 0) * (args.usdRateCopMinor ?? 0)) / 100);
+}
+
+function missingRate(amounts: OpeningAmounts) {
+  return usdToMinor(amounts.usd) > 0 && !Number(amounts.rate);
+}
+
+function OpeningAmountFields({ value, onChange, fieldClass, copLabel }: { value: OpeningAmounts; onChange: (value: OpeningAmounts) => void; fieldClass: string; copLabel: string }) {
+  const hasUsd = usdToMinor(value.usd) > 0;
+  return (
+    <>
+      <label className={fieldClass}>
+        <span>{copLabel}</span>
+        <div className="money-input">
+          <b>$</b>
+          <Input
+            inputMode="numeric"
+            enterKeyHint="done"
+            value={formatDigits(value.cop)}
+            onChange={(event) => onChange({ ...value, cop: onlyDigits(event.target.value) })}
+            placeholder="0"
+          />
+        </div>
+      </label>
+      <label className={fieldClass}>
+        <span>Dólares (opcional)</span>
+        <div className="money-input money-input-usd">
+          <b>USD</b>
+          <Input
+            inputMode="decimal"
+            enterKeyHint="done"
+            value={value.usd}
+            onChange={(event) => onChange({ ...value, usd: cleanUsd(event.target.value) })}
+            placeholder="0"
+          />
+        </div>
+      </label>
+      {hasUsd ? (
+        <label className={fieldClass}>
+          <span>Tasa de cambio (pesos por dólar)</span>
+          <div className="money-input">
+            <b>$</b>
+            <Input
+              inputMode="numeric"
+              enterKeyHint="done"
+              value={formatDigits(value.rate)}
+              onChange={(event) => onChange({ ...value, rate: onlyDigits(event.target.value).slice(0, 6) })}
+              placeholder="Ej. 4.000"
+            />
+          </div>
+          <small className="field-hint">
+            {missingRate(value) ? "Escribe la tasa para sumar los dólares al saldo." : `Total: ${formatMoney(amountsTotalMinor(value))}`}
+          </small>
+        </label>
+      ) : null}
+    </>
+  );
 }
 
 function startOfDayBogota(value: string) {
@@ -55,7 +142,7 @@ export function OpeningBalanceSection() {
   const current = useQuery(api.account.getOpeningBalance);
   const save = useMutation(api.account.setOpeningBalance);
   const clear = useMutation(api.account.clearOpeningBalance);
-  const [digits, setDigits] = useState("");
+  const [amounts, setAmounts] = useState<OpeningAmounts>(EMPTY_AMOUNTS);
   const [date, setDate] = useState(() => toDateInput(Date.now()));
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -66,13 +153,21 @@ export function OpeningBalanceSection() {
       setEditing(true);
       return;
     }
-    setDigits(String(Math.round(current.openingBalanceMinor / 100)));
+    setAmounts({
+      cop: String(Math.round(current.openingBalanceMinor / 100)),
+      usd: current.openingUsdMinor ? String(current.openingUsdMinor / 100).replace(".", ",") : "",
+      rate: current.usdRateCopMinor ? String(Math.round(current.usdRateCopMinor / 100)) : "",
+    });
     setDate(toDateInput(current.startAt));
   }, [current]);
 
   const submit = async () => {
-    if (!digits) {
+    if (!amounts.cop && usdToMinor(amounts.usd) === 0) {
       toast.error("Ingresa cuánto dinero tienes en la cuenta.");
+      return;
+    }
+    if (missingRate(amounts)) {
+      toast.error("Ingresa la tasa de cambio.");
       return;
     }
     if (!date) {
@@ -88,7 +183,7 @@ export function OpeningBalanceSection() {
     }
     try {
       setBusy(true);
-      await save({ openingBalanceMinor: Number(digits) * 100, startAt });
+      await save({ ...amountsToArgs(amounts), startAt });
       setEditing(false);
       toast.success("Saldo inicial guardado.");
     } catch (error) {
@@ -100,7 +195,7 @@ export function OpeningBalanceSection() {
 
   const remove = async () => {
     await clear();
-    setDigits("");
+    setAmounts(EMPTY_AMOUNTS);
     setDate(toDateInput(Date.now()));
     setEditing(true);
     toast.success("Saldo inicial eliminado.");
@@ -120,7 +215,10 @@ export function OpeningBalanceSection() {
         <>
           <div className="opening-summary">
             <small>Saldo inicial</small>
-            <strong>{formatMoney(current.openingBalanceMinor)}</strong>
+            <strong>{formatMoney(current.openingTotalMinor)}</strong>
+            {current.usdRateCopMinor !== null ? (
+              <span>{formatOpeningBreakdown(current.openingBalanceMinor, current.openingUsdMinor, current.usdRateCopMinor)}</span>
+            ) : null}
             <span>Desde el {formatDate(current.startAt, true)}</span>
           </div>
           <div className="opening-actions">
@@ -130,19 +228,7 @@ export function OpeningBalanceSection() {
         </>
       ) : (
         <>
-          <label className="export-field">
-            <span>¿Cuánto tienes en la cuenta?</span>
-            <div className="money-input">
-              <b>$</b>
-              <Input
-                inputMode="numeric"
-                enterKeyHint="done"
-                value={formatDigits(digits)}
-                onChange={(event) => setDigits(onlyDigits(event.target.value))}
-                placeholder="0"
-              />
-            </div>
-          </label>
+          <OpeningAmountFields value={amounts} onChange={setAmounts} fieldClass="export-field" copLabel="¿Cuánto tienes en pesos?" />
           <label className="export-field">
             <span>Desde</span>
             <Input type="date" value={date} max={toDateInput(Date.now())} onChange={(event) => setDate(event.target.value)} />
@@ -226,18 +312,23 @@ function ResetMonthDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 function ResetAllDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const resetAll = useMutation(api.account.resetAll);
   const count = useQuery(api.account.countForReset, open ? {} : "skip");
-  const [digits, setDigits] = useState("");
+  const [amounts, setAmounts] = useState<OpeningAmounts>(EMPTY_AMOUNTS);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (open) setDigits("");
+    if (open) setAmounts(EMPTY_AMOUNTS);
   }, [open]);
 
   const confirm = async () => {
+    if (missingRate(amounts)) {
+      toast.error("Ingresa la tasa de cambio.");
+      return;
+    }
+    const hasBalance = Boolean(amounts.cop) || usdToMinor(amounts.usd) > 0;
     try {
       setBusy(true);
-      await resetAll({ openingBalanceMinor: digits ? Number(digits) * 100 : undefined });
-      toast.success(digits ? `Listo. Empiezas con ${formatMoney(Number(digits) * 100)}.` : "Listo. Todo quedó en ceros.");
+      await resetAll(hasBalance ? amountsToArgs(amounts) : {});
+      toast.success(hasBalance ? `Listo. Empiezas con ${formatMoney(amountsTotalMinor(amounts))}.` : "Listo. Todo quedó en ceros.");
       onOpenChange(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo borrar.");
@@ -253,20 +344,8 @@ function ResetAllDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
         <DialogDescription>Se borran todos tus ingresos y gastos de todos los meses. No se puede deshacer.</DialogDescription>
         <button className="goal-close" type="button" aria-label="Cerrar" onClick={() => onOpenChange(false)}><X /></button>
         <p className="reset-count">{movementsLabel(count)}</p>
-        <label className="goal-field">
-          <span>Empezar con este saldo (opcional)</span>
-          <div className="money-input">
-            <b>$</b>
-            <Input
-              inputMode="numeric"
-              enterKeyHint="done"
-              value={formatDigits(digits)}
-              onChange={(event) => setDigits(onlyDigits(event.target.value))}
-              placeholder="0"
-            />
-          </div>
-          <small className="field-hint">Si lo dejas vacío, todo queda en $0.</small>
-        </label>
+        <OpeningAmountFields value={amounts} onChange={setAmounts} fieldClass="goal-field" copLabel="Empezar con este saldo en pesos (opcional)" />
+        <small className="field-hint">Si lo dejas vacío, todo queda en $0.</small>
         <Button variant="destructive" onClick={() => void confirm()} disabled={busy}>
           {busy ? "Borrando..." : "Sí, borrar todo"}
         </Button>

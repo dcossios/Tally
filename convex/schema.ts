@@ -36,9 +36,13 @@ export default defineSchema({
     ]),
   // Saldo inicial de la cuenta: el dinero que había al empezar a registrar.
   // Los movimientos desde `startAt` se suman o restan a este monto.
+  // `openingBalanceMinor` es la parte en pesos; los dólares (opcionales) se
+  // convierten con la tasa fija `usdRateCopMinor` (centavos de peso por 1 USD).
   accountSettings: defineTable({
     userId: v.id("users"),
     openingBalanceMinor: v.number(),
+    openingUsdMinor: v.optional(v.number()),
+    usdRateCopMinor: v.optional(v.number()),
     startAt: v.number(),
     updatedAt: v.number(),
   }).index("by_userId", ["userId"]),
