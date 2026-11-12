@@ -72,6 +72,19 @@ export function parseMoneyToMinor(
   return whole * 100 + cents;
 }
 
+/**
+ * Momento en que llegó el SMS. El atajo de iPhone a veces envía solo la fecha
+ * ("2026-11-11"), que se interpretaría como medianoche UTC (7 p. m. del día
+ * anterior en Bogotá). Sin hora, o con una fecha inválida o futura, se usa el
+ * momento en que el servidor recibió el mensaje.
+ */
+export function resolveReceivedAt(raw: string, now: number): number {
+  const parsed = Date.parse(raw);
+  const hasTime = /\d{1,2}:\d{2}/.test(raw);
+  if (!Number.isFinite(parsed) || !hasTime || parsed > now) return now;
+  return parsed;
+}
+
 function parseBogotaDate(message: string): number | null {
   const match = message.match(
     /el\s+(\d{2})\/(\d{2})\/(\d{2,4})\s+(?:a\s+las\s+)?(\d{2}):(\d{2})(?::(\d{2}))?/i,
@@ -168,8 +181,10 @@ export function parseBancolombiaSms(message: string): ParsedSms {
     };
   }
 
+  // El monto puede venir como "$5.200,00" (débito) o "COP57.800,00" (crédito),
+  // y la tarjeta como "con tu T.Cred *1234" o al final ("asociada a T.Cred").
   const copPurchase = normalized.match(
-    /Compraste\s+\$([\d.,]+)\s+en\s+(.+?)\s+con\s+tu\s+T\.(?:Cred|Deb)/i,
+    /Compraste\s+(?:\$|COP)\s?([\d.,]+)\s+en\s+(.+?)(?:\s+con\s+tu\s+T\.(?:Cred|Deb)|,\s+el\s+)/i,
   );
   if (copPurchase) {
     const amountMinor = parseMoneyToMinor(copPurchase[1], "COP");
@@ -308,8 +323,9 @@ export function parseBancolombiaSms(message: string): ParsedSms {
     };
   }
 
+  // Cajero ("en X de tu T.Deb") o corresponsal ("en nuestro corresponsal X, el ...").
   const withdrawal = normalized.match(
-    /Retiraste\s+\$([\d.,]+)\s+en\s+(.+?)\s+de\s+tu\s+T\.Deb/i,
+    /Retiraste\s+\$([\d.,]+)\s+en\s+(?:nuestro\s+)?(.+?)(?:\s+de\s+tu\s+T\.Deb|,\s+el\s+)/i,
   );
   if (withdrawal) {
     const amountMinor = parseMoneyToMinor(withdrawal[1], "COP");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseBancolombiaSms, parseMoneyToMinor } from "./smsParser";
+import { parseBancolombiaSms, parseMoneyToMinor, resolveReceivedAt } from "./smsParser";
 
 const messages = {
   transfer:
@@ -282,6 +282,55 @@ describe("parseBancolombiaSms", () => {
     });
   });
 
+  it("parses credit card purchases written with COP", () => {
+    expect(
+      parseBancolombiaSms(
+        "Bancolombia: Compraste COP57.800,00 en DROGUERIA CENTRAL con tu T.Cred *1234, el 11/11/2026 a las 16:05. Si tienes dudas, encuentranos aqui: 018000931987.",
+      ),
+    ).toMatchObject({
+      matched: true,
+      rule: "purchase_cop",
+      type: "expense",
+      status: "confirmed",
+      currency: "COP",
+      amountMinor: 5_780_000,
+      amountCopMinor: 5_780_000,
+      merchant: "DROGUERIA CENTRAL",
+      accountLabel: "T.Cred *1234",
+      occurredAt: Date.parse("2026-11-11T16:05:00-05:00"),
+    });
+  });
+
+  it("parses COP purchases whose card comes at the end", () => {
+    expect(
+      parseBancolombiaSms(
+        "Bancolombia: Compraste COP15.140,54 en TAXI APP COLOMBIA, el 06/11/2026 a las 19:33. Esta compra esta asociada a T.Cred *1234. Si tienes dudas, encuentranos aqui: 01800931987.",
+      ),
+    ).toMatchObject({
+      rule: "purchase_cop",
+      status: "confirmed",
+      amountMinor: 1_514_054,
+      amountCopMinor: 1_514_054,
+      merchant: "TAXI APP COLOMBIA",
+      accountLabel: "T.Cred *1234",
+    });
+  });
+
+  it("parses withdrawals at a corresponsal", () => {
+    expect(
+      parseBancolombiaSms(
+        "Bancolombia: Retiraste $300,000 en nuestro corresponsal 123 TIENDA CENTRO en MEDELLIN, el 09/11/26 a las 14:19. Si tienes dudas, llamanos al 6045109095.",
+      ),
+    ).toMatchObject({
+      rule: "withdrawal",
+      type: "expense",
+      status: "confirmed",
+      amountMinor: 30_000_000,
+      merchant: "corresponsal 123 TIENDA CENTRO en MEDELLIN",
+      categoryName: "Retiros",
+    });
+  });
+
   it("returns unknown for unsupported messages", () => {
     expect(parseBancolombiaSms("Bancolombia: mensaje informativo")).toMatchObject({
       matched: false,
@@ -289,4 +338,21 @@ describe("parseBancolombiaSms", () => {
       status: "pending",
     });
   });
+});
+
+describe("resolveReceivedAt", () => {
+  const now = Date.parse("2026-11-11T16:06:00-05:00");
+
+  it("keeps a full timestamp", () => {
+    expect(resolveReceivedAt("2026-11-11T16:05:30-05:00", now)).toBe(
+      Date.parse("2026-11-11T16:05:30-05:00"),
+    );
+  });
+
+  it.each(["2026-11-11", "no es una fecha", "", "2026-11-12T10:00:00-05:00"])(
+    "falls back to the server time for %j",
+    (raw) => {
+      expect(resolveReceivedAt(raw, now)).toBe(now);
+    },
+  );
 });

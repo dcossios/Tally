@@ -3,6 +3,7 @@ import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { auth } from "./auth";
 import { normalizeMessage, sha256 } from "./lib/hash";
+import { resolveReceivedAt } from "./lib/smsParser";
 
 const http = httpRouter();
 
@@ -25,10 +26,7 @@ http.route({
     if (!isSmsPayload(payload)) {
       return json({ status: "error", message: "Payload inválido." }, 400);
     }
-    const receivedAt = Date.parse(payload.receivedAt);
-    if (!Number.isFinite(receivedAt)) {
-      return json({ status: "error", message: "Fecha inválida." }, 400);
-    }
+    const receivedAt = resolveReceivedAt(payload.receivedAt, Date.now());
     const tokenHash = await sha256(authorization.slice("Bearer ".length));
     const normalizedHash = await sha256(
       `${payload.sender}|${normalizeMessage(payload.message)}`,
